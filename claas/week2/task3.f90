@@ -1,30 +1,24 @@
 program statistics
     implicit none
-    integer :: h , i , j
+    integer :: n, h , i , j
     real :: number 
-    real, allocatable :: arrIn(:), matrix(:,:), arrOut(:)
+    real, allocatable :: arrIn(:), matrix(:,:), arrOut(:), analytical_solution(:)
 
 
 
+    ! Ask for the number of grid points and grid spacing
+    print *, "Enter the number of grid points (n):"
+    read(*, *) n
+    print *, "Enter the grid spacing (h):"
+    read(*, *) h
 
-    print *, 'Enter the number of real numbers:'
-    read *, h
+    ! Allocate arrays
+    allocate(arrIn(n), analytical_solution(n))
 
-    do 
-        if (h > 0) then
-            exit
-        end if
-        print *, 'Invalid input enter positiv number'
-        read *, h
-    end do
-
-
-    allocate(arrIn(h))
-
-    print *, 'Enter the real numbers:'
-    do i = 1, h
-        read *, number
-        arrIn(i) = number
+    ! Initialize y array with some example function (e.g., sin(x))
+    do i = 1, n
+        arrIn(i) = sin(real(i) * h) ! Example function: sin(x)
+        analytical_solution(i) = -sin(real(i) * h) ! Second derivative of example function: sin(x)
     end do
 
 
@@ -33,15 +27,15 @@ program statistics
     !creating the matrix if quit expencive but one time cost
     ! calculating the 2nd derivative is cheap and usable many times
     
-    allocate(matrix(h, h))
+    allocate(matrix(n, n))
 
     ! Initialize the matrix with 0s
     matrix = 0.0
 
     ! Set -2 on the diagonal and 1 above and below the diagonal
-    do i = 2, h -1 
+    do i = 2, n -1 
         matrix(i,i) = -2.0    ! Set -2 on the diagonal
-        if (i < h) then
+        if (i < n) then
             matrix(i, i +1) = 1.0 ! Set 1 above the diagonal
         end if
         if (i > 1) then
@@ -59,13 +53,16 @@ program statistics
 
     !------ calc 2nd derivative of arrIn and store in arrOut
 
-    allocate(arrOut(h))
+    allocate(arrOut(n))
     arrOut = matmul(matrix, arrIn)
 
 
-    print *, '2nd derivative:'
+    print *, 'numerical 2nd derivative:'
     print *, arrOut
 
+    ! Output the analytical second derivative
+    print *, "Second derivative analytically calculated:"
+    print *, analytical_solution
 
     ! Deallocate the matrix
     deallocate(matrix)
