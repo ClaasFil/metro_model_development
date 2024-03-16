@@ -1,7 +1,6 @@
 program statistics
     implicit none
-    integer :: n, h , i , j
-    real :: number 
+    integer :: n, h , i 
     real, allocatable :: arrIn(:), matrix(:,:), arrOut(:), analytical_solution(:)
 
 
@@ -63,6 +62,10 @@ program statistics
     ! Output the analytical second derivative
     print *, "Second derivative analytically calculated:"
     print *, analytical_solution
+
+    ! print error:
+    print *, "Error:"
+    print *, arrOut - analytical_solution
 
     ! Deallocate the matrix
     deallocate(matrix)
