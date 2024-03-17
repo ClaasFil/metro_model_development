@@ -15,8 +15,8 @@ program FiniteDifferences
 
     ! Initialize y array with some example function (e.g., sin(x))
     do i = 1, n
-        y(i) = sin(real(i) * h) ! Example function: sin(x)
-        analytical_solution(i) = -sin(real(i) * h) ! Second derivative of example function: sin(x)
+        y(i) = (real(i) * h)**3 ! Example function: x**3
+        analytical_solution(i) = 6*(real(i) * h) ! Second derivative of example function: 6*x
     end do
 
     ! Compute second derivative using finite difference method
