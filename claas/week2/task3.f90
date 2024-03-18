@@ -1,6 +1,7 @@
 program statistics
     implicit none
-    integer :: n, h , i 
+    integer ::  i, j, n
+    real ::  h
     real, allocatable :: arrIn(:), matrix(:,:), arrOut(:), analytical_solution(:)
 
 
@@ -11,14 +12,23 @@ program statistics
     print *, "Enter the grid spacing (h):"
     read(*, *) h
 
+
+
     ! Allocate arrays
     allocate(arrIn(n), analytical_solution(n))
 
-    ! Initialize y array with some example function (e.g., sin(x))
+
+
+
+    ! Initialize y array with some example function (e.g., sin(x), x**2)
     do i = 1, n
+        !arrIn(i) = (real(i)*h)**4! Example function: x**4
+        !analytical_solution(i) = 12 * (real(i)*h) ** 2 ! (real(i) * h)! Second derivative of example function: x**4
         arrIn(i) = sin(real(i) * h) ! Example function: sin(x)
         analytical_solution(i) = -sin(real(i) * h) ! Second derivative of example function: sin(x)
     end do
+
+
 
 
     ! --------- creat mtx for the 2nd derivative ---------
@@ -42,18 +52,18 @@ program statistics
         end if
     end do
 
-    ! Print the matrix
+    !Print the matrix
     !print *, 'Matrix:'
-    !do i = 1, h
-    !    print *, (matrix(i,j), j = 1, h)
-    !end do
+    !do i = 1, n
+    !    print *, (matrix(i,j), j = 1, n)
+   ! end do
 
 
 
     !------ calc 2nd derivative of arrIn and store in arrOut
 
     allocate(arrOut(n))
-    arrOut = matmul(matrix, arrIn)
+    arrOut = matmul(matrix, arrIn)/h**2
 
 
     print *, 'numerical 2nd derivative:'
@@ -66,6 +76,18 @@ program statistics
     ! print error:
     print *, "Error:"
     print *, arrOut - analytical_solution
+
+
+
+    !save to file
+    open(1, file='task3_res.txt', status='replace')
+    write(1, *) 'numerical 2nd derivative:'
+    write(1, *) arrOut
+    write(1, *) "Second derivative analytically calculated:"
+    write(1, *) analytical_solution
+    write(1, *) "Error:"
+    write(1, *) arrOut - analytical_solution
+
 
     ! Deallocate the matrix
     deallocate(matrix)
