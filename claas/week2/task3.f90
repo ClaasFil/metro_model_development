@@ -22,10 +22,10 @@ program statistics
 
     ! Initialize y array with some example function (e.g., sin(x), x**2)
     do i = 1, n
-        !arrIn(i) = (real(i)*h)**4! Example function: x**4
-        !analytical_solution(i) = 12 * (real(i)*h) ** 2 ! (real(i) * h)! Second derivative of example function: x**4
-        arrIn(i) = sin(real(i) * h) ! Example function: sin(x)
-        analytical_solution(i) = -sin(real(i) * h) ! Second derivative of example function: sin(x)
+        arrIn(i) = (real(i)*h)**4! Example function: x**4
+        analytical_solution(i) = 12 * (real(i)*h) ** 2 ! (real(i) * h)! Second derivative of example function: x**4
+        !arrIn(i) = sin(real(i) * h) ! Example function: sin(x)
+        !analytical_solution(i) = -sin(real(i) * h) ! Second derivative of example function: sin(x)
     end do
 
 
