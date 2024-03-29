@@ -1,3 +1,5 @@
+!gfortran -o task2 derivative.f90 task2.f90 && ./task2
+
 program task2
     use derivative
     implicit none
