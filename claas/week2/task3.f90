@@ -20,7 +20,7 @@ program statistics
 
 
 
-    ! Initialize y array with some example function (e.g., sin(x), x**2)
+    ! Initialize y array with some example function (e.g., sin(x), x**4)
     do i = 1, n
         arrIn(i) = (real(i)*h)**4! Example function: x**4
         analytical_solution(i) = 12 * (real(i)*h) ** 2 ! (real(i) * h)! Second derivative of example function: x**4
@@ -53,17 +53,17 @@ program statistics
     end do
 
     !Print the matrix
-    !print *, 'Matrix:'
-    !do i = 1, n
-    !    print *, (matrix(i,j), j = 1, n)
-   ! end do
+    print *, 'Matrix:'
+    do i = 1, n
+        print *, (matrix(i,j), j = 1, n)
+    end do
 
 
 
     !------ calc 2nd derivative of arrIn and store in arrOut
 
     allocate(arrOut(n))
-    arrOut = matmul(matrix, arrIn)/h**2
+    arrOut = matmul(matrix, arrIn) / h**2
 
 
     print *, 'numerical 2nd derivative:'
