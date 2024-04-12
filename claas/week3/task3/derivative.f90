@@ -19,7 +19,7 @@ contains
 
     ! --------- creat mtx for the 2nd derivative ---------
     ! calculate the 2nd derivative via matrix
-    ! creating the matrix if quit expencive but one time cost
+    ! creating the matrix is quit expencive but one time cost
     ! calculating the 2nd derivative is cheap and usable many times
     
         allocate(mtx(n, n))
