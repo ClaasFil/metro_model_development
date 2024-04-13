@@ -1,0 +1,7 @@
+&INPUTS
+    nx=128
+    ny=128
+    total_time=0.1
+    kappa=1
+    a=0.5
+/
