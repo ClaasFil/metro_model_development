@@ -1,5 +1,6 @@
 program HeatDiffusion2d
     use FiniteDifference2d
+    use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
     integer :: nx, ny, i, j, k, nsteps
     real :: L, total_time, h, dt, time, a, kappa
@@ -13,20 +14,15 @@ program HeatDiffusion2d
     kappa = 1.0
     total_time = 0.1
     a = 0.3
-    outputfilename='heatdif2d_out_random_a03.txt'
+    outputfilename='heatdif2d_out_random_a03'
 
     ! Read in Parameters
-    NAMELIST /inputs/ nx, ny, kappa, total_time, a, outputfilename
-    open(1, file="namelist", status="old")
-    read(1, NML=inputs)
-    close(1)
-    write(*, NML=inputs)
-
-    ! Read in Parameters
-    ! open(1, file="namelist.txt", status="old")
+    ! open(1, file="namelist.nml", status="old")
     ! read(1, *) nx, ny, kappa, total_time, a, outputfilename
     ! close(1)
     ! write(*, *) nx, ny, kappa, total_time, a, outputfilename
+
+    call read_namelist('namelist.nml', nx, ny, kappa, a, outputfilename)
 
     ! Calculate grid spacing and time step
     h = L / real(nx - 1)
@@ -65,7 +61,9 @@ program HeatDiffusion2d
         ! Update temperature array for next time step
         T = T_new
         if (mod(k, 10) == 0) then
-            write(10, *) T
+            ! write(10, *) T
+            ! Save temperature data to CSV file
+            call write_temperature_to_csv(outputfilename, T, k)
         end if
     end do
 
@@ -73,5 +71,57 @@ program HeatDiffusion2d
 
     ! Deallocate memory
     deallocate(T_init, T, T_new, second_derivative)
+
+    contains
+    subroutine read_namelist(file_path, nx, ny, kappa, a, outfile)
+        !! Reads Namelist from given file.
+        character(len=*),  intent(in)    :: file_path
+        integer,           intent(inout) :: nx, ny
+        real,              intent(inout) :: kappa, a
+        integer                          :: fu, rc
+        character(len=*), intent(inout)  :: outfile
+
+        ! Namelist definition.
+        namelist /INPUTS/ nx, ny, kappa, a, outfile
+
+        ! Check whether file exists.
+        inquire (file=file_path, iostat=rc)
+
+        if (rc /= 0) then
+            write (stderr, '("Error: input file ", a, " does not exist")') file_path
+            return
+        end if
+
+        ! Open and read Namelist file.
+        open (action='read', file=file_path, iostat=rc, newunit=fu)
+        read (nml=INPUTS, iostat=rc, unit=fu)
+        if (rc /= 0) write (stderr, '("Error: invalid Namelist format")')
+
+        close (fu)
+    end subroutine read_namelist
+
+    subroutine write_temperature_to_csv(outfile, T, step)
+        real, dimension(:,:), intent(in) :: T
+        character(len=*), intent(inout)  :: outfile
+        integer, intent(in) :: step
+        integer :: i, j
+        character(len=100) :: filename
+        open(unit=20, file=outfile // trim(adjustl(int2str(step))) // '.csv', status='replace', action='write')
+        do i = 1, nx
+            do j = 1, ny
+                write(20, *) T(i, j)
+            end do
+        end do
+        close(20)
+    end subroutine write_temperature_to_csv
+
+    function int2str(i) result(str)
+        implicit none
+        integer, intent(in) :: i
+        character(len=10) :: str
+
+        ! Convert integer to string
+        write(str, '(I10)') i
+    end function int2str
 
 end program HeatDiffusion2d
