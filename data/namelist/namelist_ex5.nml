@@ -1,0 +1,10 @@
+&INPUTS
+nx=32
+ny=32
+kappa=1.0
+total_time=10
+a_adv=0.01
+a_diff=0.01
+B=1
+outfile='data/ex5.csv'
+/
