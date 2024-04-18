@@ -5,38 +5,36 @@ program HeatDiffusion2d
     use namelist_utilities
     use csv_writer
     use matrix_utilities
+    use boundaries_ex5
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
-    integer :: nx, ny, i, j, nsteps
-    real :: total_time, h, dt, kappa, a_adv, a_diff, B
-    real, allocatable :: T_init(:,:), T(:,:), T_new(:,:), second_derivative(:,:), u(:,:), v(:,:), psi(:,:)
-    character(len=100) :: outputfilename
+    integer :: nx=4, ny=4, i, j, nsteps, k, io_error
+    real :: total_time=1., h, dt, kappa=1., a_adv=0.1, a_diff=0.1, B=1.
+    real, allocatable :: T_init(:,:), T(:,:), T_new(:,:), d2T(:,:), u(:,:), v(:,:), psi(:,:)
+    real, allocatable :: advection(:,:)
+    character(len=100) :: init_State='rand', outputfilename
 
-    !call read_namelist('data/namelist/namelist_ex5.nml', nx, ny, kappa, total_time, a_adv, a_diff, B, outputfilename)
-    ! Initialise Parameters
-    nx = 5
-    ny = 5
-    kappa = 1.0
-    total_time = 0.1
-    a_adv = 0.03
-    a_diff = 0.03
-    B = 1
-    outputfilename='data/ex5.csv'
-
-
+    !read input parameters
+    call read_namelist_ex5('data/namelist/ex_5.nml', nx, ny, kappa, total_time, a_adv, a_diff, B, init_State)
+    
     
     ! Init Temperature arrays
-    allocate(T_init(nx, ny), T(nx, ny), T_new(nx, ny), second_derivative(nx, ny))
+    allocate(T_init(nx, ny), T(nx, ny), T_new(nx, ny), d2T(nx, ny), advection(nx, ny))
 
     ! Initialize temperature array
     T_init = 0.0
     T = 0.0
     T_new = 0.0
-    second_derivative = 0.0
+    d2T = 0.0
+    advection = 0.0
     
     T_init(nx/2, ny/2) = 10.0  ! Spike in the center
     call RANDOM_NUMBER(T_init)
-    !T = T_init
+    T = T_init
+
+   call boundaries_T(T)
+
+   !call print_matrix(T)
 
     h = 1.0 / real(ny-1)
 
@@ -50,8 +48,16 @@ program HeatDiffusion2d
         end do
     end do
 
-    call print_matrix(psi)
+    outputfilename = 'data/ex_5/psi_out.csv'
+    open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    call write_to_csv(outputfilename, psi)
+    close(10)
 
+    
 
     ! compute u and v
     do i = 2, nx -1
@@ -61,12 +67,78 @@ program HeatDiffusion2d
         end do
     end do
 
-    call print_matrix(u)
-    call print_matrix(v)
+    outputfilename = 'data/ex_5/u_out.csv'
+    open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    call write_to_csv(outputfilename, u)
+    close(10)
+
+    outputfilename = 'data/ex_5/v_out.csv'
+    open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    call write_to_csv(outputfilename, v)
+    close(10)
+    
+
+
+
+    !call print_matrix(u)
+    !call print_matrix(v)
 
     ! calc dt dt=MIN(a_diff*h**2/kappa, a_adv*h/vmax)
     dt = MIN(a_diff*h**2/kappa, a_adv*h/MAXVAL(ABS(v)))
     nsteps = int(total_time / dt)
+
+    !call print_matrix(T_init)
+
+    outputfilename = 'data/ex_5/T_out.csv'
+    open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+
+    close(10)
+    call write_to_csv(outputfilename, T)
+
+    ! Integration loop
+    do k = 1, int(nsteps)
+        ! Compute second derivative
+        call FiniteDifference2D(T, h, d2T)
+        call advection2D(T, h, u, v,  advection)
+        !call print_matrix(T)
+        
+        !call print_matrix(d2T)
+        !call print_matrix(advection)
+        ! apply preconditions to advection 
+        !call boundaries_dT(advection)
+
+        !call print_matrix(advection)
+        
+        ! Update temperature using forward Euler method
+        T_new = T + dt * (kappa * d2T - advection)
+        call boundaries_T(T_new)
+        
+
+        ! Update temperature array for next time step
+        T = T_new
+        call write_to_csv(outputfilename, T)
+
+        !call print_matrix(T)
+
+
+        !print *, '------------------------------------------'
+        ! Check if 5 steps have been completed
+        if (k > 10000) then
+            exit
+        end if
+    end do
 
 
 

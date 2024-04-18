@@ -16,6 +16,8 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+
+
 # Compile the finite differences module
 echo "Compiling finite differences module..."
 gfortran -c -J$BIN_DIR src/fortran/helper/finitdifferences.f90 -o $BIN_DIR/finitdifferences.o
