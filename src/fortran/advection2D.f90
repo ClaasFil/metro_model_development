@@ -154,7 +154,7 @@ program HeatDiffusion2d
 
         !print *, '------------------------------------------'
         ! Check if 5 steps have been completed
-        if (k > 500000) then
+        if (k > 30000) then
             exit
         end if
     end do

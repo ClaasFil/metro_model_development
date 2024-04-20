@@ -55,14 +55,16 @@ contains
 
         do i = 2, n - 1
             do j = 2, m - 1
-                ! Deside upstream or downstream on sign of u and v
-                if (u(i,j) > 0) then
-                    advection(i,j) = u(i,j) * (T(i,j) - T(i-1,j)) / h
+                ! Calculate advection term using upwind differencing
+                ! For u component
+                if (u(i,j) >= 0.0) then
+                    advection(i,j) = advection(i,j) + u(i,j) * (T(i,j) - T(i-1,j)) / h
                 else
-                    advection(i,j) = u(i,j) * (T(i+1,j) - T(i,j)) / h
+                    advection(i,j) = advection(i,j) + u(i,j) * (T(i+1,j) - T(i,j)) / h
                 end if
-
-                if (v(i,j) > 0) then
+                
+                ! For v component
+                if (v(i,j) >= 0.0) then
                     advection(i,j) = advection(i,j) + v(i,j) * (T(i,j) - T(i,j-1)) / h
                 else
                     advection(i,j) = advection(i,j) + v(i,j) * (T(i,j+1) - T(i,j)) / h
