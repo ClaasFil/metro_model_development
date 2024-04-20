@@ -1,10 +1,10 @@
 &INPUTS
 nx=16
 ny=16
-kappa=1.
-total_time=10.0
+kappa=0.1
+total_time=100.0
 a_adv=0.3
 a_diff=0.1
-B=10.
+B=100.
 init_State='rand'
 /

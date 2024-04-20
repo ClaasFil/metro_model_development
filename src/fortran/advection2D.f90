@@ -12,7 +12,7 @@ program HeatDiffusion2d
     real :: total_time=1., h, dt, kappa=1., a_adv=0.1, a_diff=0.1, B=1.
     real, allocatable :: T_init(:,:), T(:,:), T_new(:,:), d2T(:,:), u(:,:), v(:,:), psi(:,:)
     real, allocatable :: advection(:,:)
-    character(len=100) :: init_State='rand', outputfilename
+    character(len=100) :: init_State='rand', outputfilename, outputfilename_adv
 
     !read input parameters
     call read_namelist_ex5('data/namelist/ex_5.nml', nx, ny, kappa, total_time, a_adv, a_diff, B, init_State)
@@ -29,7 +29,7 @@ program HeatDiffusion2d
     advection = 0.0
     
     T_init(nx/2, ny/2) = 10.0  ! Spike in the center
-    call RANDOM_NUMBER(T_init)
+    !call RANDOM_NUMBER(T_init)
     T = T_init
 
    call boundaries_T(T)
@@ -42,11 +42,14 @@ program HeatDiffusion2d
     allocate(u(nx, ny), v(nx, ny), psi(nx, ny))
 
     ! Compute the psi matrix
-    do i = 1, nx
-        do j = 1, ny
-            psi(i, j) = B * sin(pi * real(i) / nx) * sin(pi * real(j) / ny)
+    do i = 1, nx 
+        do j = 1, ny 
+            psi(i, j) = B * sin(pi * (real(i) - 1) / (nx - 1)) * sin(pi * (real(j) - 1 )/ (ny-1) )
+            ! -1 to everythin to make psi symetric i thik the formula is ment in [0,n-1] inst of [1,n]
         end do
     end do
+
+    !call print_matrix(psi)
 
     outputfilename = 'data/ex_5/psi_out.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
@@ -58,7 +61,8 @@ program HeatDiffusion2d
     close(10)
 
     
-
+    u = 0.0
+    v = 0.0
     ! compute u and v
     do i = 2, nx -1
         do j = 2, ny-1
@@ -66,6 +70,9 @@ program HeatDiffusion2d
             v(i, j) = (psi(i+1, j) - psi(i-1, j))/2*h
         end do
     end do
+
+    !call print_matrix(u)
+    !call print_matrix(v)
 
     outputfilename = 'data/ex_5/u_out.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
@@ -105,6 +112,16 @@ program HeatDiffusion2d
     endif
 
     close(10)
+
+    outputfilename_adv = 'data/ex_5/adv_out.csv'
+    open(unit=10, file=trim(outputfilename_adv), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
+
     call write_to_csv(outputfilename, T)
 
     ! Integration loop
@@ -112,6 +129,8 @@ program HeatDiffusion2d
         ! Compute second derivative
         call FiniteDifference2D(T, h, d2T)
         call advection2D(T, h, u, v,  advection)
+
+        call write_to_csv(outputfilename_adv, advection)
         !call print_matrix(T)
         
         !call print_matrix(d2T)
@@ -122,7 +141,7 @@ program HeatDiffusion2d
         !call print_matrix(advection)
         
         ! Update temperature using forward Euler method
-        T_new = T + dt * (kappa * d2T - advection)
+        T_new = T + dt * (kappa * d2T * 0 - advection)
         call boundaries_T(T_new)
         
 
@@ -135,7 +154,7 @@ program HeatDiffusion2d
 
         !print *, '------------------------------------------'
         ! Check if 5 steps have been completed
-        if (k > 10000) then
+        if (k > 500000) then
             exit
         end if
     end do
