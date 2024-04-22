@@ -28,17 +28,24 @@ program HeatDiffusion2d
     d2T = 0.0
     advection = 0.0
     
-    T_init(nx/2, ny/2) = 10.0  ! Spike in the center
-    !call RANDOM_NUMBER(T_init)
-    T = T_init
+    if (trim(init_state) == 'rand') then
+        ! Fill T with random numbers
+        call RANDOM_NUMBER(T)
+    else if (trim(init_state) == 'spike') then
+        ! Place a spike in the center
+        T(nx/2, ny/2) = 10.0
+    else
+        ! Handle unknown initialization type
+        print *, 'Invalid initialization state:', trim(init_state)
+        stop
+    end if
 
    call boundaries_T(T)
 
-   !call print_matrix(T)
 
     h = 1.0 / real(ny-1)
 
-    ! init velosophi
+    ! init psi
     allocate(u(nx, ny), v(nx, ny), psi(nx, ny))
 
     ! Compute the psi matrix
@@ -49,8 +56,8 @@ program HeatDiffusion2d
         end do
     end do
 
-    !call print_matrix(psi)
 
+    ! save psi for plotting
     outputfilename = 'data/ex_5/psi_out.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
@@ -66,13 +73,11 @@ program HeatDiffusion2d
     ! compute u and v
     do i = 2, nx -1
         do j = 2, ny-1
-            u(i, j) = (psi(i, j+1) - psi(i, j-1))/2*h
-            v(i, j) = (psi(i+1, j) - psi(i-1, j))/2*h
+            u(i, j) = (psi(i, j+1) - psi(i, j-1))/(2*h)
+            v(i, j) = -(psi(i+1, j) - psi(i-1, j))/(2*h)
         end do
     end do
 
-    !call print_matrix(u)
-    !call print_matrix(v)
 
     outputfilename = 'data/ex_5/u_out.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
@@ -95,14 +100,10 @@ program HeatDiffusion2d
 
 
 
-    !call print_matrix(u)
-    !call print_matrix(v)
-
     ! calc dt dt=MIN(a_diff*h**2/kappa, a_adv*h/vmax)
     dt = MIN(a_diff*h**2/kappa, a_adv*h/MAXVAL(ABS(v)))
     nsteps = int(total_time / dt)
 
-    !call print_matrix(T_init)
 
     outputfilename = 'data/ex_5/T_out.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
@@ -126,35 +127,23 @@ program HeatDiffusion2d
 
     ! Integration loop
     do k = 1, int(nsteps)
-        ! Compute second derivative
         call FiniteDifference2D(T, h, d2T)
         call advection2D(T, h, u, v,  advection)
 
         call write_to_csv(outputfilename_adv, advection)
-        !call print_matrix(T)
-        
-        !call print_matrix(d2T)
-        !call print_matrix(advection)
-        ! apply preconditions to advection 
-        !call boundaries_dT(advection)
+ 
+        call boundaries_dT(advection)
 
-        !call print_matrix(advection)
-        
-        ! Update temperature using forward Euler method
-        T_new = T + dt * (kappa * d2T * 0 - advection)
+        T_new = T + dt * (kappa * d2T  - advection)
+
         call boundaries_T(T_new)
         
-
         ! Update temperature array for next time step
         T = T_new
         call write_to_csv(outputfilename, T)
 
-        !call print_matrix(T)
-
-
-        !print *, '------------------------------------------'
-        ! Check if 5 steps have been completed
-        if (k > 30000) then
+        ! Maxiter to protect from to long runtimes and mage num instabel behavior debuggin easier
+        if (k > 10000) then
             exit
         end if
     end do

@@ -13,7 +13,7 @@ contains
         print *, 'Matrix:'
         do i = 1, n
             ! Print each row with aligned columns
-            write(*, '(100F8.2)') (matrix(i, j), j = 1, m)
+            write(*, '(100F12.2)') (matrix(i, j), j = 1, m)
         end do
     end subroutine print_matrix
 end module matrix_utilities
@@ -42,9 +42,9 @@ contains
         do i = 1, size(T, 1)
             do j = 1, size(T, 2)
                 if (j == size(T, 2)) then
-                    write(20, '(F6.2)') T(i, j)  ! Last element in the row
+                    write(20, '(F12.2)') T(i, j)  ! Last element in the row
                 else
-                    write(20, '(F6.2, A)', advance='no') T(i, j), ','  ! Elements with comma
+                    write(20, '(F12.2, A)', advance='no') T(i, j), ','  ! Elements with comma
                 end if
             end do
             write(20, *)  ! Newline for the next row
