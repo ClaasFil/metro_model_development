@@ -1,0 +1,72 @@
+## Description
+This is the main documentation for this week's assignment. All the provided files are also accessible and will be maintained via my GitHub [here](https://github.com/ClaasFil/metro_model_deve). We have decided to restructure our project to enable better cooperation and intuitive expansion in later weeks and larger projects. Here is a short overview of the architecture:
+
+1) **Execution of the Fortran Program**:
+   To execute the Fortran program, navigate to `/metro_model_development` and execute the shell script:
+   ```bash
+   ./shell_script/advection2D.sh
+
+
+    fillies@fillies:~/Documents/Uni_Projects/metro_model_development$ ./shell_script/advection2D.sh
+    Compiling utilities module...
+    Compiling finite differences module...
+    Compiling the main program...
+    Linking object files to create executable...
+    Compilation and linking completed successfully :0
+    Running the program...
+    Program executed successfully :~)
+
+As displayed, the shell script compiles, links, and executes all the necessary files for the execution of the assignment.
+
+Project Architecture:
+
+
+    /bin:
+    All the executables and modules will be stored here. There is no reason to access manually.
+
+    /data:
+    All the data files will be stored here as well as the namelists. Everything is organized by assignment. To make access for Jupyter Notebook easy, everything is stored in CSV format.
+
+    /shell_scripts:
+    Executables for each assignment will be stored here.
+
+    /src :
+    Source code is stored here.
+        /fortran
+            /advection.f90
+            Main file of the assignment. This is where the magic happens.
+            /helper
+            All the classes and methods used in advection.f90 will be stored here.
+            /past_weeks
+            Containing the main assignment files from past weeks. For example, advection.f90 will be moved here.
+        /notebooks
+        All the Jupyter notebooks will be stored here.
+
+
+
+
+
+How to execute:
+1) Navigate to:
+fillies@fillies:~/Documents/Uni_Projects/metro_model_development$ pwd
+/home/fillies/Documents/Uni_Projects/metro_model_development
+
+2) call desired shell skrip:
+fillies@fillies:~/Documents/Uni_Projects/metro_model_development$ ./shell_script/headdifusion.sh 
+Compiling utilities module...
+Compiling finite differences module...
+Compiling the main program...
+Linking object files to create executable...
+Compilation and linking completed successfully.
+
+2) migth not me executable than call:
+fillies@fillies:~/Documents/Uni_Projects/metro_model_development$ chmod +x shell_script/headdifusion.sh 
+
+
+
+
+- Do mind probles in IDE which says he cand finde a module he will once you complie properly....
+
+
+
+

@@ -1,0 +1,7 @@
+&INPUTS
+nx=32
+ny=32
+kappa=1.0
+a=0.1
+outfile='out_random_a01.txt'
+/

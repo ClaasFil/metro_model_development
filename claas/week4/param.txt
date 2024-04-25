@@ -1,7 +1,0 @@
-&INPUTS
-  nx=9
-  ny=8
-  kappa=1.
-  total_time=.5
-  a=0.03
-/
