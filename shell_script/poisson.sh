@@ -16,8 +16,6 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-
-
 # Compile the finite differences module
 echo "Compiling finite differences module..."
 gfortran -c -J$BIN_DIR src/fortran/helper/finitdifferences.f90 -o $BIN_DIR/finitdifferences.o
@@ -30,7 +28,7 @@ fi
 
 # Compile the main program
 echo "Compiling the main program..."
-gfortran -c -I$BIN_DIR src/fortran/past_weeks/advection2D.f90 -o $BIN_DIR/advection2D.o
+gfortran -c -I$BIN_DIR src/fortran/poisson.f90 -o $BIN_DIR/poisson.o
 
 # Check if main program compiled successfully
 if [ $? -ne 0 ]; then
@@ -40,7 +38,7 @@ fi
 
 # Link all object files to create the executable
 echo "Linking object files to create executable..."
-gfortran $BIN_DIR/utilities.o $BIN_DIR/finitdifferences.o $BIN_DIR/advection2D.o -o $BIN_DIR/advection2D
+gfortran $BIN_DIR/utilities.o $BIN_DIR/finitdifferences.o $BIN_DIR/poisson.o -o $BIN_DIR/poisson
 
 # Check if linking was successful
 if [ $? -ne 0 ]; then
@@ -52,7 +50,7 @@ echo "Compilation and linking completed successfully :0"
 
 # Execute the program
 echo "Running the program..."
-./$BIN_DIR/advection2D
+./$BIN_DIR/poisson
 
 # Check if the program ran successfully
 if [ $? -ne 0 ]; then
