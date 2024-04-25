@@ -115,14 +115,10 @@ module namelist_utilities
 end module namelist_utilities
 
 
-
-
 module constants_module
     implicit none
     real, parameter :: pi = 3.14159265358979323846
 end module constants_module
-
-
 
 
 module boundaries_ex5
