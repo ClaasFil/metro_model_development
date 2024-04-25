@@ -30,7 +30,7 @@ fi
 
 # Compile the main program
 echo "Compiling the main program..."
-gfortran -c -I$BIN_DIR src/fortran/advection2D.f90 -o $BIN_DIR/advection2D.o
+gfortran -c -I$BIN_DIR src/fortran/past_weeks/advection2D.f90 -o $BIN_DIR/advection2D.o
 
 # Check if main program compiled successfully
 if [ $? -ne 0 ]; then

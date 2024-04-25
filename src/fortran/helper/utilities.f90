@@ -112,6 +112,29 @@ module namelist_utilities
     
         close(unit=10)
     end subroutine read_namelist_ex5
+
+    subroutine read_namelist_ex6(filename, nx, ny, kappa, total_time, a_adv, a_diff, B, init_State)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: nx, ny
+        real, intent(out) :: kappa, total_time, a_adv, a_diff, B
+        character(len=*), intent(out) :: init_State
+    
+        namelist /INPUTS/ nx, ny, kappa, total_time, a_adv, a_diff, B, init_State
+    
+        integer :: io
+        open(unit=10, file=filename, status='old', iostat=io)
+        if (io /= 0) then
+            print *, "Failed to open namelist file:", filename
+            return
+        end if
+    
+        read(unit=10, nml=INPUTS, iostat=io)
+        if (io /= 0) then
+            print *, "Error reading namelist"
+        end if
+    
+        close(unit=10)
+    end subroutine read_namelist_ex6
 end module namelist_utilities
 
 
