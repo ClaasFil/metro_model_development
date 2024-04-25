@@ -16,8 +16,8 @@ contains
         second_derivative = 0.0
         
 
-        do i = 2, n - 1
-            do j = 2, m - 1
+        do j = 2, n - 1
+            do i = 2, m - 1
                 second_derivative(i,j) = (y(i+1,j) + y(i-1,j) + y(i,j+1) - 4.0 * y(i,j) + y(i,j-1)) / h**2
             end do
         end do
@@ -53,8 +53,8 @@ contains
         advection = 0.0
         
 
-        do i = 2, n - 1
-            do j = 2, m - 1
+        do j = 2, n - 1
+            do i = 2, m - 1
                 ! Calculate advection term using upwind differencing
                 ! For u component
                 if (u(i,j) >= 0.0) then
