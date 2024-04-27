@@ -1,6 +1,6 @@
 &INPUTS
-nx=16
-ny=16
+nx=64
+ny=64
 alpha=0.5
 init_State='spike'
 multigrid=.TRUE.
