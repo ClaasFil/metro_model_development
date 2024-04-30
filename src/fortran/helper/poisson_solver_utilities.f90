@@ -1,47 +1,69 @@
 module poisson_solver_utilities
-    ! use FiniteDifference
+    use matrix_utilities
     implicit none
 
     contains
 
-    RECURSIVE FUNCTION iteration_2DPoisson(u,f,h,alpha) RESULT (res_rms)
-        IMPLICIT NONE
-        REAL, INTENT(INOUT) :: u(:,:)
-        REAL, INTENT(IN) :: f(:,:)
-        REAL, INTENT(IN) :: h, alpha
-        REAL :: res_rms
-        REAL, allocatable :: u_derived(:,:), R(:,:)
-    
-        allocate(u_derived(size(u,1), size(u,2)), R(size(u,1), size(u,2)))
-    
-        call FiniteDifference2D(u, h, u_derived)
-        R = f - u_derived
-    
-        u = u - alpha * R * h**2 / 4
-    
-        res_rms = sqrt(sum(R**2) / size(R,1) / size(R,2))
-    
-        RETURN
-    
-    END FUNCTION iteration_2DPoisson
+        FUNCTION iteration_2DPoisson(u,f,h,alpha) RESULT (res_rms)
+            use matrix_utilities
+            IMPLICIT NONE
+            double precision, INTENT(INOUT) :: u(:,:)
+            double precision, INTENT(IN) :: f(:,:)
+            double precision, INTENT(IN) :: h, alpha
+            double precision :: res_rms
+            double precision, allocatable :: u_derived(:,:), R(:,:)
+            integer :: i, j
+        
+            allocate(u_derived(size(u,1), size(u,2)), R(size(u,1), size(u,2)))
+        
+            u_derived = 0.0
+            R = 0.0
+
+            do j = 2, size(u, 2) - 1
+                do i = 2, size(u, 1) - 1
+                    call print_matrix(u)
+                    call print_matrix(f)
+                    call print_matrix(u_derived) 
+                    u_derived(i, j) = (1/h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1)))
+                    R(i, j) = f(i, j) - u_derived(i, j)
+                    u(i, j) = u(i, j) - alpha * R(i, j) * h**2 / 4
+                end do
+            end do
+            
+            res_rms = sqrt(sum(R**2) / size(R,1) / size(R,2))
+        
+            RETURN
+        
+        END FUNCTION iteration_2DPoisson
 
 
         subroutine residue_2DPoisson(u,f,h,res_f)
-            REAL, INTENT(INOUT) :: u(:,:), res_f(:,:)
-            REAL, INTENT(IN) :: f(:,:), h
-            REAL, allocatable :: u_derived(:,:)
+            double precision, INTENT(INOUT) :: res_f(:,:)
+            double precision, INTENT(IN) :: u(:,:), f(:,:), h
+            double precision, allocatable :: u_derived(:,:)
+            integer :: i, j
 
             allocate(u_derived(size(u,1), size(u,2)))
 
-            call FiniteDifference2D(u, h, u_derived)
-            res_f = f - u_derived
+            u_derived = 0.0
+            res_f = 0.0
+
+            do j = 2, size(u, 2) - 1
+                do i = 2, size(u, 1) - 1
+                    u_derived(i, j) = (1/h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1)))
+                    res_f(i, j) = f(i, j) - u_derived(i, j)
+                    ! u(i, j) = u(i, j) - alpha * R(i, j) * h**2 / 4
+                end do
+            end do
+
+            ! res_f = f - u_derived
 
         end subroutine residue_2DPoisson
 
 
         subroutine restrict(res_f,res_c)
-            REAL, INTENT(IN) :: res_f(:,:)
-            REAL, allocatable, INTENT(OUT) :: res_c(:,:)
+            double precision, INTENT(IN) :: res_f(:,:)
+            double precision, allocatable, INTENT(OUT) :: res_c(:,:)
             INTEGER :: i, j
 
             allocate(res_c(size(res_f,1)/2, size(res_f,2)/2))
@@ -56,8 +78,8 @@ module poisson_solver_utilities
 
 
         subroutine prolongate(corr_c,corr_f)
-            REAL, INTENT(IN) :: corr_c(:,:)
-            REAL, allocatable, INTENT(OUT) :: corr_f(:,:)
+            double precision, INTENT(IN) :: corr_c(:,:)
+            double precision, allocatable, INTENT(OUT) :: corr_f(:,:)
             INTEGER :: i, j
 
             allocate(corr_f(2*size(corr_c,1)-1, 2*size(corr_c,2)-1))
@@ -82,49 +104,49 @@ module poisson_solver_utilities
 
         RECURSIVE FUNCTION Vcycle_2DPoisson(u,f,h,alpha) RESULT (res_rms)
             IMPLICIT NONE
-            REAL, INTENT(INOUT) :: u(:,:)
-            REAL, INTENT(IN) :: f(:,:), h, alpha
-            REAL :: res_rms ! root mean square residue
+            double precision, INTENT(INOUT) :: u(:,:)
+            double precision, INTENT(IN) :: f(:,:), h, alpha
+            double precision :: res_rms ! root mean square residue
             INTEGER :: nx, ny, nxc, nyc, i ! local variables
-            REAL, ALLOCATABLE :: res_c(:,:), corr_c(:,:), res_f(:,:), corr_f(:,:)
+            double precision, ALLOCATABLE :: res_c(:,:), corr_c(:,:), res_f(:,:), corr_f(:,:)
             
             nx = SIZE(u,1); ny = SIZE(u,2) ! must be power of 2 plus 1
             nxc = (nx+1)/2; nyc = (ny+1)/2 ! coarse grid
             
             IF (MIN(nx,ny) > 5) THEN
             
-            ALLOCATE(res_f(nx,ny), corr_f(nx,ny))
-            ALLOCATE(res_c(nxc,nyc), corr_c(nxc,nyc))
-            
-            ! take two iterations on the fine grid
-            res_rms = iteration_2DPoisson(u,f,h,alpha)
-            res_rms = iteration_2DPoisson(u,f,h,alpha)
-            
-            ! restrict residue to the coarse grid
-            CALL residue_2DPoisson(u,f,h,res_f)
-            CALL restrict(res_f,res_c)
-            
-            ! solve for the coarse grid correction
-            corr_c = 0.
-            res_rms = Vcycle_2DPoisson(corr_c,res_c,h*2,alpha) ! recursion
-            
-            ! prolongate (interpolate) the correction to the fine grid
-            CALL prolongate(corr_c,corr_f)
-            
-            ! correct the fine-grid solution
-            u = u + corr_f
-            
-            ! take two more smoothing iterations on the fine grid
-            res_rms = iteration_2DPoisson(u,f,h,alpha)
-            res_rms = iteration_2DPoisson(u,f,h,alpha)
-            
-            DEALLOCATE(res_f,corr_f,res_c,corr_c)
-            
+                ALLOCATE(res_f(nx,ny), corr_f(nx,ny))
+                ALLOCATE(res_c(nxc,nyc), corr_c(nxc,nyc))
+                
+                ! take two iterations on the fine grid
+                res_rms = iteration_2DPoisson(u,f,h,alpha)
+                res_rms = iteration_2DPoisson(u,f,h,alpha)
+                
+                ! restrict residue to the coarse grid
+                CALL residue_2DPoisson(u,f,h,res_f)
+                CALL restrict(res_f,res_c)
+                
+                ! solve for the coarse grid correction
+                corr_c = 0.
+                res_rms = Vcycle_2DPoisson(corr_c,res_c,h*2,alpha) ! recursion
+                
+                ! prolongate (interpolate) the correction to the fine grid
+                CALL prolongate(corr_c,corr_f)
+                
+                ! correct the fine-grid solution
+                u = u + corr_f
+                
+                ! take two more smoothing iterations on the fine grid
+                res_rms = iteration_2DPoisson(u,f,h,alpha)
+                res_rms = iteration_2DPoisson(u,f,h,alpha)
+                
+                DEALLOCATE(res_f,corr_f,res_c,corr_c)
+                
             ELSE ! coarsest level (ny=5): iterate to get "exact" solution
             
-            DO i = 1,100
-                res_rms = iteration_2DPoisson(u,f,h,alpha)
-            END DO
+                DO i = 1,100
+                    res_rms = iteration_2DPoisson(u,f,h,alpha)
+                END DO
             
             END IF
         
@@ -132,9 +154,9 @@ module poisson_solver_utilities
 
 
         subroutine FiniteDifference2D(y, h, second_derivative)
-            real, intent(in) :: y(:,:)
-            real, intent(in) :: h
-            real, intent(out) :: second_derivative(:,:)
+            double precision, intent(in) :: y(:,:)
+            double precision, intent(in) :: h
+            double precision, intent(out) :: second_derivative(:,:)
             integer :: n, m, i, j
             
             n = size(y, 1)
@@ -142,27 +164,19 @@ module poisson_solver_utilities
             
     
             second_derivative = 0.0
-            
     
-            do j = 2, m - 1
-                do i = 2, n - 1
-                    second_derivative(i,j) = (y(i+1,j) + y(i-1,j) + y(i,j+1) - 4.0 * y(i,j) + y(i,j-1)) / h**2
+
+            ! Calculate second derivative
+            do j = 1, size(y, 2)
+                second_derivative(1, j) = 0.0
+                do i = 2, size(y, 1) - 1
+                    second_derivative(i, 1) = 0.0
+                    ! second_derivative(i, j) = (y(i+1, j) - 2.0 * y(i, j) + y(i-1, j)) / h**2 + (y(i, j+1) - 2.0 * y(i, j) + y(i, j-1)) / h**2
+                    second_derivative(i, size(y, 2)) = 0.0
                 end do
+                second_derivative(size(y, 1), j) = 0.0
             end do
-    
-            ! Apply boundary conditions
-            ! Top and bottom rows
-            do j = 1, m
-                second_derivative(1,j) = (y(2,j) - y(1,j)) / h**2  ! Top row
-                second_derivative(n,j) = (y(n-1,j) - y(n,j)) / h**2  ! Bottom row
-            end do
-    
-            ! Left and right columns
-            do i = 2, n - 1
-                second_derivative(i,1) = (y(i,2) - y(i,1)) / h**2  ! Left column
-                second_derivative(i,m) = (y(i,m-1) - y(i,m)) / h**2  ! Right column
-            end do
-    
+        
         end subroutine FiniteDifference2D
     
 end module poisson_solver_utilities
