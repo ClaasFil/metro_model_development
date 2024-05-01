@@ -3,7 +3,7 @@ module matrix_utilities
     implicit none
 contains
     subroutine print_matrix(matrix)
-        real, dimension(:, :), intent(in) :: matrix
+        double precision, dimension(:, :), intent(in) :: matrix
         integer :: i, j, n, m
 
         n = size(matrix, 1)

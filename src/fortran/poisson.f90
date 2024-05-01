@@ -4,11 +4,11 @@ program poisson
     use namelist_utilities
     implicit none
     real, parameter :: pi = 3.14159265358979323846
-    integer :: nx=6, ny=6, i, j, iter_count
+    integer :: nx=17, ny=17, i, j, iter_count
     double precision :: h, alpha=1, res_rms, f_norm
     double precision, allocatable :: u(:,:), f(:,:)
-    character(len=15) :: init_State='spike', output_u='poisson_u', output_f='poisson_f'
-    logical :: multigrid=.FALSE.
+    character(len=9) :: init_State='spike', output_u='poisson_u', output_f='poisson_f'
+    logical :: multigrid=.TRUE.
     NAMELIST /inputs/ nx, ny, init_State, multigrid, alpha, output_u, output_f
 
     !read input parameters
@@ -20,68 +20,74 @@ program poisson
     ! Init arrays
     allocate(u(nx, ny), f(nx, ny))
 
-    u = 0.0
+    u = 0.0D0
 
-    ! Initialize u
-    f = 0.0
-    f(nx/2, ny/2) = 10.0  ! Spike in the center
+    f = 0.0D0
+    f(nx/2, ny/2) = 10.0D0  ! Spike in the center
+
+    ! Random initial state with satisfied boundary conditions
     if (init_State == 'rand') then
         call RANDOM_NUMBER(f)
-        do j = 1, ny
-            f(1, j) = 0.0
-            f(nx, j) = 0.0
-        end do
-        do i = 1, nx
-            u(i, 1) = 0.0
-            u(i, ny) = 0.0
-        end do
+        f(1,:) = 0.0D0
+        f(nx,:) = 0.0D0
+        f(:,1) = 0.0D0
+        f(:,ny) = 0.0D0
     end if
    
 
+    ! Loop to call solver until convergence
     res_rms = sum(abs(f - u)) / (size(f,1) * size(f,2))
     i = 0
-    do while (.FALSE.)!(res_rms > 1.0e-5)
+    do while (res_rms > 1.0e-5)
         if (multigrid) then
-            write(*,*) "Ich bin eine Ente"
-            if (mod(i, 50) == 0) then
-                if (i < 1000) then
-                    write(*,*) "Ich bin eine Ente"
+
+            ! Save not every iteration step as csv
+            if (mod(i, 1000) == 0) then
+                if (i < 6000) then
                     call write_u_and_f_to_csv(output_u, output_f, u, f, i)
                 end if
             end if
+
             res_rms = Vcycle_2DPoisson(u,f,h,alpha)
-            write(*,*) res_rms  
+            ! write(*,*) res_rms  
             i = i + 1
+
         else
-            if (mod(i, 50) == 0) then
-                if (i < 1000) then
+
+            ! Save not every iteration step as csv
+            if (mod(i, 5000) == 0) then
+                if (i < 100000) then
                     call write_u_and_f_to_csv(output_u, output_f, u, f, i)
                 end if
             end if
+
             res_rms = iteration_2DPoisson(u,f,h,alpha)
-            write(*,*) res_rms
+            ! write(*,*) res_rms
             i = i + 1
+
         end if
     end do
+    write(*,*) i
+
+
+    ! Simpler loop for testing purposes
 
     ! Calculate the norm of f
     f_norm = SQRT(SUM(f**2))
 
-    ! Iterate until residue is less than 1e-5 of f_norm
     iter_count = 0
     res_rms = 1.0D0
-    DO WHILE (res_rms> 1.0e-5)
-        res_rms = iteration_2DPoisson(u,f,h,alpha)
+    DO WHILE (.FALSE.) !i = 0, 1000
+        res_rms = Vcycle_2DPoisson(u,f,h,alpha)
         iter_count = iter_count + 1
+        write(*,*) res_rms
     END DO
 
-    call print_matrix(u)
-    call print_matrix(f)
-    PRINT *, 'Iterations:', iter_count
-    PRINT *, 'Residue:', res_rms
+    ! call print_matrix(u)
+    ! call print_matrix(f)
 
-    write(*,*) "Ich bin eine Ente"  ! @Claas das bleibt jetzt drin
 
+    ! Subroutine for saving to csv (as in utilities module)
 
     contains
 
