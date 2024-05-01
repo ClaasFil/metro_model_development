@@ -12,28 +12,46 @@ module poisson_solver_utilities
             double precision, INTENT(IN) :: h, alpha
             double precision :: res_rms
             double precision, allocatable :: u_derived(:,:), R(:,:)
-            integer :: i, j
+            integer :: i, j, nx, ny
         
-            allocate(u_derived(size(u,1), size(u,2)), R(size(u,1), size(u,2)))
-        
-            u_derived = 0.0
-            R = 0.0
+            nx = SIZE(u, 1)
+            ny = SIZE(u, 2)
 
-            do j = 2, size(u, 2) - 1
-                do i = 2, size(u, 1) - 1
-                    call print_matrix(u)
-                    call print_matrix(f)
-                    call print_matrix(u_derived) 
-                    u_derived(i, j) = (1/h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1)))
-                    R(i, j) = f(i, j) - u_derived(i, j)
-                    u(i, j) = u(i, j) - alpha * R(i, j) * h**2 / 4
-                end do
-            end do
+            allocate(R(size(u,1), size(u,2)), u_derived(size(u,1), size(u,2)))
             
-            res_rms = sqrt(sum(R**2) / size(R,1) / size(R,2))
-        
+            res_rms = 0.0
+
+            !call print_matrix(R)
+            !call print_matrix(u)
+            !call print_matrix(f)
+            
+            ! Perform Gauss-Seidel iteration
+            DO j = 2, ny - 1
+                u(1, j) = 0.0
+                u(nx, j) = 0.0  
+                DO i = 2, nx - 1
+                    u(i, 1) = 0.0
+                    u(i, ny) = 0.0
+                    !R = f(i, j) - (1.0 / h**2) * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
+                    !u(i, j) = u(i, j) - alpha * R(i, j)
+                    !res_rms = res_rms + R(i, j)**2
+
+                    R(i,j) = f(i, j) - 0.25D0 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
+                    u(i, j) = u(i, j) - alpha * R(i,j) * h**2 * 0.25D0
+                    res_rms = res_rms + R(i,j)**2
+                    !call print_matrix(u)
+                    !PRINT *, 'R:', u(i, j-1) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j)
+                    !PRINT *, 'u:', u(i,j)
+                    !PRINT *, 'f:', f(i,j)
+                    !PRINT *, 'alpha:', alpha
+                    !PRINT *, 'h:', h
+                END DO
+            END DO
+            
+            ! Calculate root mean square residue
+            res_rms = SQRT(res_rms / real((nx-2) * (ny-2), KIND=8))
+            
             RETURN
-        
         END FUNCTION iteration_2DPoisson
 
 
@@ -50,7 +68,7 @@ module poisson_solver_utilities
 
             do j = 2, size(u, 2) - 1
                 do i = 2, size(u, 1) - 1
-                    u_derived(i, j) = (1/h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1)))
+                    u_derived(i, j) = (1.0/h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1)))
                     res_f(i, j) = f(i, j) - u_derived(i, j)
                     ! u(i, j) = u(i, j) - alpha * R(i, j) * h**2 / 4
                 end do
@@ -153,30 +171,30 @@ module poisson_solver_utilities
         END FUNCTION Vcycle_2DPoisson
 
 
-        subroutine FiniteDifference2D(y, h, second_derivative)
-            double precision, intent(in) :: y(:,:)
-            double precision, intent(in) :: h
-            double precision, intent(out) :: second_derivative(:,:)
-            integer :: n, m, i, j
-            
-            n = size(y, 1)
-            m = size(y, 2)
-            
-    
-            second_derivative = 0.0
-    
+        subroutine FiniteDifference2D(T, h, second_derivative)
+            real(8), intent(in) :: T(:,:)
+            real(8), intent(in) :: h
+            real(8), intent(out) :: second_derivative(size(T,1), size(T,2))
+            integer :: i, j
 
-            ! Calculate second derivative
-            do j = 1, size(y, 2)
+            ! Calculate second derivative in the x-direction
+            do j = 1, size(T, 2)
                 second_derivative(1, j) = 0.0
-                do i = 2, size(y, 1) - 1
-                    second_derivative(i, 1) = 0.0
-                    ! second_derivative(i, j) = (y(i+1, j) - 2.0 * y(i, j) + y(i-1, j)) / h**2 + (y(i, j+1) - 2.0 * y(i, j) + y(i, j-1)) / h**2
-                    second_derivative(i, size(y, 2)) = 0.0
+                do i = 2, size(T, 1) - 1
+                    second_derivative(i, j) = (T(i+1, j) - 2.0 * T(i, j) + T(i-1, j)) / h**2
                 end do
-                second_derivative(size(y, 1), j) = 0.0
+                second_derivative(size(T, 1), j) = 0.0
             end do
-        
+
+            ! Calculate second derivative in the y-direction
+            do i = 1, size(T, 1)
+                second_derivative(i, 1) = 0.0
+                do j = 2, size(T, 2) - 1
+                    second_derivative(i, j) = second_derivative(i, j) + (T(i, j+1) - 2.0 * T(i, j) + T(i, j-1)) / h**2
+                end do
+                second_derivative(i, size(T, 2)) = 0.0
+            end do
+
         end subroutine FiniteDifference2D
     
 end module poisson_solver_utilities
