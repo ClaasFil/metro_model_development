@@ -1,9 +1,0 @@
-&INPUTS
-nx=64
-ny=64
-alpha=1
-init_State='spike'
-multigrid=.FALSE.
-output_u = 'poisson_u.csv'
-output_f = 'poisson_f.csv'
-/
