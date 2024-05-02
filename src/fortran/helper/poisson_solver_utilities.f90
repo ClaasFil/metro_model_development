@@ -10,42 +10,24 @@ module poisson_solver_utilities
             double precision, INTENT(INOUT) :: u(:,:)
             double precision, INTENT(IN) :: f(:,:)
             double precision, INTENT(IN) :: h, alpha
-            double precision :: res_rms
+            double precision :: res_rms, res
             double precision, allocatable :: R(:,:)
             integer :: i, j, nx, ny
         
             nx = SIZE(u, 1)
             ny = SIZE(u, 2)
-
-            allocate(R(size(u,1), size(u,2)))
-            R = 0.0D0
             
-            res_rms = 0.0
-
-            !call print_matrix(R)
-            !call print_matrix(u)
-            !call print_matrix(f)
+            res = 0.0D0
+            res_rms = 0.0D0
             
             ! Perform Gauss-Seidel iteration
             DO j = 2, ny - 1 
                 DO i = 2, nx - 1
-                    u(1,:) = 0.0D0
-                    u(nx,:) = 0.0D0
-                    u(:,1) = 0.0D0
-                    u(:,ny) = 0.0D0
-                    !R = f(i, j) - (1.0 / h**2) * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
-                    !u(i, j) = u(i, j) - alpha * R(i, j)
-                    !res_rms = res_rms + R(i, j)**2
 
-                    R(i,j) = f(i, j) - 0.25D0 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
-                    u(i, j) = u(i, j) - alpha * R(i,j) * h**2 * 0.25D0
-                    res_rms = res_rms + R(i,j)**2
-                    !call print_matrix(u)
-                    !PRINT *, 'R:', u(i, j-1) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j)
-                    !PRINT *, 'u:', u(i,j)
-                    !PRINT *, 'f:', f(i,j)
-                    !PRINT *, 'alpha:', alpha
-                    !PRINT *, 'h:', h
+                    res = f(i, j) - 1./h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
+                    u(i, j) = u(i, j) - alpha * res * h**2 / 4.0
+                    res_rms = res_rms + res**2
+
                 END DO
             END DO
             
@@ -57,7 +39,7 @@ module poisson_solver_utilities
 
 
         subroutine residue_2DPoisson(u,f,h,res_f)
-            double precision, INTENT(INOUT) :: res_f(:,:)
+            double precision, INTENT(OUT) :: res_f(:,:)
             double precision, INTENT(IN) :: u(:,:), f(:,:), h
             integer :: i, j, nx, ny
             double precision :: res_rms
@@ -66,25 +48,13 @@ module poisson_solver_utilities
             ny = SIZE(u, 2)
             
             res_rms = 0.0D0
-
-            !call print_matrix(R)
-            !call print_matrix(u)
-            !call print_matrix(f)
             
-            ! Perform Gauss-Seidel iteration
+            ! Calcualte residual
             DO j = 2, ny - 1 
                 DO i = 2, nx - 1
-                    res_f(i, j) = f(i, j) - (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
-                    res_rms = res_rms + res_f(i,j)**2
-                    !call print_matrix(u)
-                    !PRINT *, 'R:', u(i, j-1) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j)
-                    !PRINT *, 'u:', u(i,j)
-                    !PRINT *, 'f:', f(i,j)
+                    res_f(i, j) = f(i, j) - 1./h**2 * (u(i-1, j) + u(i+1, j) + u(i, j-1) + u(i, j+1) - 4.0 * u(i, j))
                 END DO
             END DO
-            
-            ! Calculate root mean square residue
-            res_rms = SQRT(res_rms / real((nx-2) * (ny-2), KIND=8))
 
         end subroutine residue_2DPoisson
 
@@ -92,14 +62,17 @@ module poisson_solver_utilities
         subroutine restrict(res_f,res_c)
             double precision, INTENT(IN) :: res_f(:,:)
             double precision, allocatable, INTENT(OUT) :: res_c(:,:)
-            INTEGER :: i, j
+            INTEGER :: i, j, nx, ny, nxc, nyc
 
-            allocate(res_c(size(res_f,1)/2, size(res_f,2)/2))
+            nx = size(res_f,1); ny = size(res_f,2)
+            nxc = (nx+1)/2; nyc = (ny+1)/2
 
+            allocate(res_c(nxc, nyc))
             res_c = 0.0
-            do j = 2, size(res_f,2)-1, 2
-                do i = 2, size(res_f,1)-1, 2
-                    res_c(i/2,j/2) = res_f(i,j) 
+
+            do j = 1, nyc
+                do i = 1, nxc
+                    res_c(i,j) = res_f(2*i-1, 2*j-1) 
                 end do
             end do
         end subroutine restrict
@@ -128,6 +101,30 @@ module poisson_solver_utilities
                 end do
             end do
         end subroutine prolongate
+
+
+        subroutine prolongate2(corr_c,corr_f) ! This version causes a SIGSEV Segmentation Fault Error
+            double precision, INTENT(IN) :: corr_c(:,:)
+            double precision, allocatable, INTENT(OUT) :: corr_f(:,:)
+            INTEGER :: i, j, nx, ny, nxc, nyc
+
+            nxc = size(corr_c,1); nyc = size(corr_c,2)
+            nx = 2*nxc-1; ny = 2*nyc-1
+
+            corr_f = 0.0D0
+
+            !allocate(corr_f(2*size(corr_c,1)-1, 2*size(corr_c,2)-1))
+            PRINT *, 'size(corr_c,1):', size(corr_c,1)
+            corr_f = 0.0D0
+            do j = 1, size(corr_c,2)
+                do i = 1, size(corr_c,1)
+                    corr_f(i,j) = (corr_c(FLOOR((i+1)/2.), FLOOR((j+1)/2.)) &
+                                + corr_c(FLOOR((i+1)/2.), CEILING((j+1)/2.)) &
+                                + corr_c(CEILING((i+1)/2.), FLOOR((j+1)/2.)) &
+                                + corr_c(CEILING((i+1)/2.), CEILING((j+1)/2.)))/4.0
+                end do
+            end do
+        end subroutine prolongate2
 
 
         RECURSIVE FUNCTION Vcycle_2DPoisson(u,f,h,alpha) RESULT (res_rms)

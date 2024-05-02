@@ -23,7 +23,7 @@ program poisson
     u = 0.0D0
 
     f = 0.0D0
-    f(nx/2, ny/2) = 10.0D0  ! Spike in the center
+    f(nx/2, ny/2) = 1.0D0  ! Spike in the center
 
     ! Random initial state with satisfied boundary conditions
     if (init_State == 'rand') then
@@ -33,47 +33,46 @@ program poisson
         f(:,1) = 0.0D0
         f(:,ny) = 0.0D0
     end if
-   
+
+    ! Calculate the norm of f
+    f_norm = SQRT(SUM(f**2)/(nx*ny))
 
     ! Loop to call solver until convergence
-    res_rms = sum(abs(f - u)) / (size(f,1) * size(f,2))
+    res_rms = f_norm
     i = 0
-    do while (res_rms > 1.0e-5)
+
+    do while (res_rms/f_norm > 1.0e-5)
         if (multigrid) then
 
             ! Save not every iteration step as csv
-            if (mod(i, 1000) == 0) then
-                if (i < 6000) then
+            if (mod(i, 1) == 0) then
+                if (i < 10) then
                     call write_u_and_f_to_csv(output_u, output_f, u, f, i)
                 end if
             end if
-
+            !write(*,*) i
             res_rms = Vcycle_2DPoisson(u,f,h,alpha)
             ! write(*,*) res_rms  
-            i = i + 1
 
         else
 
             ! Save not every iteration step as csv
-            if (mod(i, 5000) == 0) then
-                if (i < 100000) then
+            if (mod(i, 10) == 0) then
+                if (i < 100) then
                     call write_u_and_f_to_csv(output_u, output_f, u, f, i)
                 end if
             end if
 
             res_rms = iteration_2DPoisson(u,f,h,alpha)
             ! write(*,*) res_rms
-            i = i + 1
 
         end if
+        i = i + 1
     end do
     write(*,*) i
 
 
     ! Simpler loop for testing purposes
-
-    ! Calculate the norm of f
-    f_norm = SQRT(SUM(f**2))
 
     iter_count = 0
     res_rms = 1.0D0
