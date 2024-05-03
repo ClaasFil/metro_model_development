@@ -1,0 +1,9 @@
+&INPUTS
+nx=16
+ny=16
+alpha=0.5
+init_State='spike'
+multigrid=.FALSE.
+output_u = 'out_u.csv'
+output_f = 'out_f.csv'
+/

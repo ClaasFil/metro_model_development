@@ -1,0 +1,24 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Build Fortran 90",
+            "type": "shell",
+            "command": "gfortran",
+            "args": [
+                "-std=f90",
+                "-Wall",
+                "-g",
+                "${file}",
+                "-o",
+                "${fileDirname}/${fileBasenameNoExtension}"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": [],
+            "detail": "Compiler: gfortran with Fortran 90 standards"
+        }
+    ]
+}

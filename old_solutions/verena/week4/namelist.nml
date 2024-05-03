@@ -1,0 +1,7 @@
+&INPUTS
+nx=64
+ny=64
+kappa=1.0
+a=0.1
+outfile='out_random_a01.txt'
+/
