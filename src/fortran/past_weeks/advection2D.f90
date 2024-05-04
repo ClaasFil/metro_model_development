@@ -1,6 +1,6 @@
 program HeatDiffusion2d
     ! Import modules
-    use constants_module
+    ! use constants_module
     use finitedifference
     use namelist_utilities
     use csv_writer
@@ -98,10 +98,8 @@ program HeatDiffusion2d
     close(10)
     
 
-
-
     ! calc dt dt=MIN(a_diff*h**2/kappa, a_adv*h/vmax)
-    dt = MIN(a_diff*h**2/kappa, a_adv*h/MAXVAL(ABS(v)))
+    dt = MIN(a_diff*h**2/kappa, a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))
     nsteps = int(total_time / dt)
 
 

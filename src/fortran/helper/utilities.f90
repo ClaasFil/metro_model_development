@@ -3,7 +3,7 @@ module matrix_utilities
     implicit none
 contains
     subroutine print_matrix(matrix)
-        real, dimension(:, :), intent(in) :: matrix
+        double precision, dimension(:, :), intent(in) :: matrix
         integer :: i, j, n, m
 
         n = size(matrix, 1)
@@ -113,13 +113,14 @@ module namelist_utilities
         close(unit=10)
     end subroutine read_namelist_ex5
 
-    subroutine read_namelist_ex6(filename, nx, ny, kappa, total_time, a_adv, a_diff, B, init_State)
+    subroutine read_namelist_ex6(filename, nx, ny, init_State, multigrid, alpha, output_u, output_f)
         character(len=*), intent(in) :: filename
         integer, intent(out) :: nx, ny
-        real, intent(out) :: kappa, total_time, a_adv, a_diff, B
-        character(len=*), intent(out) :: init_State
+        real, intent(out) :: alpha
+        character(len=*), intent(out) :: init_State, output_u, output_f
+        logical, intent(out) :: multigrid
     
-        namelist /INPUTS/ nx, ny, kappa, total_time, a_adv, a_diff, B, init_State
+        namelist /INPUTS/ nx, ny, init_State, multigrid, alpha, output_u, output_f
     
         integer :: io
         open(unit=10, file=filename, status='old', iostat=io)
@@ -135,17 +136,14 @@ module namelist_utilities
     
         close(unit=10)
     end subroutine read_namelist_ex6
+
 end module namelist_utilities
-
-
 
 
 module constants_module
     implicit none
     real, parameter :: pi = 3.14159265358979323846
 end module constants_module
-
-
 
 
 module boundaries_ex5
@@ -163,6 +161,7 @@ contains
         ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
         matrix(:, 1) = 1.0
         matrix(:, m) = 0.0
+
     
         !call print_matrix(matrix)
 
@@ -179,8 +178,11 @@ contains
         
         !call print_matrix(matrix)
         ! Apply boundary conditions Tx = 0 at x = 0 (i=1), Tx = 0 at x = xmax (i=nx)
-        matrix(1, :) = 0.0
-        matrix(n, :) = 0.0
+        ! matrix(1, :) = 0.0
+        ! matrix(n, :) = 0.0
+
+        matrix(1,:) = matrix(2,:)
+        matrix(n,:) = matrix(n-1,:)
     
         !call print_matrix(matrix)
 
