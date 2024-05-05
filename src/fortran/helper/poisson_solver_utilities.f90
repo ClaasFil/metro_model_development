@@ -42,12 +42,11 @@ module poisson_solver_utilities
             double precision, INTENT(OUT) :: res_f(:,:)
             double precision, INTENT(IN) :: u(:,:), f(:,:), h
             integer :: i, j, nx, ny
-            double precision :: res_rms
 
             nx = SIZE(u, 1)
             ny = SIZE(u, 2)
             
-            res_rms = 0.0D0
+            res_f = 0.0D0
             
             ! Calcualte residual
             DO j = 2, ny - 1 
@@ -67,7 +66,6 @@ module poisson_solver_utilities
             nx = size(res_f,1); ny = size(res_f,2)
             nxc = (nx+1)/2; nyc = (ny+1)/2
 
-            allocate(res_c(nxc, nyc))
             res_c = 0.0
 
             do j = 1, nyc
@@ -96,7 +94,8 @@ module poisson_solver_utilities
                         corr_f(2*i-1,2*j) = (corr_c(i,j) + corr_c(i, j+1))/2
                     end if
                     if (i < size(corr_c,1) .and. j < size(corr_c,2)) then
-                        corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1))/2
+                        ! corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1))/2
+                        corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1) + corr_c(i+1,j) + corr_c(i, j+1))/4
                     end if
                 end do
             end do
