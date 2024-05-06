@@ -26,6 +26,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Compile the  Vcycle_2DPoisson module
+echo "Compiling finite Vcycle_2DPoisson module..."
+gfortran -c -J$BIN_DIR src/fortran/helper/Vcycle_2DPoisson.f90 -o $BIN_DIR/Vcycle_2DPoisson.o
+
+# Check if  Vcycle_2DPoisson compiled successfully
+if [ $? -ne 0 ]; then
+    echo "Failed to compile Vcycle_2DPoisson module."
+    exit 1
+fi
+
 # Compile the main program
 echo "Compiling the main program..."
 gfortran -c -I$BIN_DIR src/fortran/dry_convection.f90 -o $BIN_DIR/dry_convection.o
@@ -38,7 +48,7 @@ fi
 
 # Link all object files to create the executable
 echo "Linking object files to create executable..."
-gfortran $BIN_DIR/utilities.o $BIN_DIR/finitdifferences.o $BIN_DIR/dry_convection.o -o $BIN_DIR/dry_convection
+gfortran $BIN_DIR/utilities.o $BIN_DIR/finitdifferences.o $BIN_DIR/dry_convection.o $BIN_DIR/Vcycle_2DPoisson.o -o $BIN_DIR/dry_convection
 
 # Check if linking was successful
 if [ $? -ne 0 ]; then
