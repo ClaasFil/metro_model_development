@@ -8,6 +8,7 @@ program dry_convection
     use boundaries_ex5
     use T_inits
     use poisson_solver
+    use poisson_duetsch
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
     integer :: nx=4, ny=4                    ! number of grid points in x and y
@@ -37,6 +38,8 @@ program dry_convection
     ! test derivetives:
     real(8), allocatable:: d2psi(:,:)           
     real(8), allocatable:: d2w(:,:)
+    REAL(8) :: res_rms_duetsch                          ! root mean square residue 
+    real(8), allocatable:: w_duetsch(:,:)               ! vorticity
 
 
     
@@ -71,10 +74,10 @@ program dry_convection
     advection = 0.0
 
     ! test derivetives:
-    allocate(d2psi(nx, ny), d2w(nx, ny))
+    allocate(d2psi(nx, ny), d2w(nx, ny), w_duetsch(nx, ny))
     d2psi = 0.0
     d2w = 0.0
-
+    w_duetsch = 0.0
 
 
 
@@ -199,9 +202,12 @@ program dry_convection
 
         ! Determine 𝜔 from Ra dT/dx using the Poisson solver (Equation 2)
         res_rms = Vcycle_2DPoisson(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-        print *, 'res_rms of w = ', res_rms
+        print *, 'res_rms verena of w = ', res_rms
         call write_to_csv_real8('data/ex_7/w.csv', w)
 
+        !Duetsch Sol:
+        res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
+        print *, 'res_rms duetsch of w = ', res_rms_duetsch
 
 
         call FiniteDifference2D_real8(w/(-Ra), h, d2w)
