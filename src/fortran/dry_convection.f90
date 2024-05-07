@@ -20,7 +20,7 @@ program dry_convection
     real :: max_err                          ! maximum error
     real :: Ra                               ! Rayleigh number
     real(8) :: h                                ! grid spacing
-    real(8) :: alpha = 1.0                           ! relaxation parameter
+    real(8) :: alpha = 1.                         ! relaxation parameter
     REAL(8) :: res_rms                          ! root mean square residue 
     REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track tiem
     REAL(8) :: f_norm                          ! norm used for convergence check of poisson solver
@@ -218,7 +218,8 @@ program dry_convection
         ! print max element
         print *, 'max Tdx = ', MAXVAL(ABS(Tdx))
 
-
+        print *, 'h = ', h
+        print *, 'alpha = ', alpha
         ! Determine 𝜔 from Ra dT/dx using the Poisson solver (Equation 2)
         ! res_rms = Vcycle_2DPoisson(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
         ! print *, 'res_rms verena of w = ', res_rms

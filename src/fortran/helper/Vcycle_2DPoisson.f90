@@ -202,7 +202,7 @@ MODULE poisson_duetsch
       REAL(KIND=DBL) :: res_rms ! root mean square residual
       INTEGER :: nx, ny, nxc, nyc, i ! local variables
       REAL(KIND=DBL), ALLOCATABLE :: res_c(:,:), corr_c(:,:), res_f(:,:), corr_f(:,:)
-    
+      !print *, 'n ,m :', SIZE(u,1), SIZE(u,2)
       nx = SIZE(u,1); ny = SIZE(u,2) ! must be power of 2 plus 1
       nxc = (nx+1)/2; nyc = (ny+1)/2 ! coarse grid
     
