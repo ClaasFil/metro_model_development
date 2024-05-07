@@ -265,6 +265,8 @@ subroutine initialize_temperature_cosine(T, nx, ny)
             T(i, j) = 0.5 * (1.0 + cos(3.0 * pi * x / nx))
         end do
     end do
+    T(1, :) = 1.0
+    T(nx, :) = 0.0
 end subroutine initialize_temperature_cosine
 end module T_inits
 

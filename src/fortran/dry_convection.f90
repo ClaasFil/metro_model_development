@@ -7,7 +7,7 @@ program dry_convection
     use matrix_utilities
     use boundaries_ex5
     use T_inits
-    use poisson_solver
+    use poisson_solver_utilities
     use poisson_duetsch
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
@@ -23,6 +23,7 @@ program dry_convection
     real(8) :: alpha = 1.0                           ! relaxation parameter
     REAL(8) :: res_rms                          ! root mean square residue 
     REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track tiem
+    REAL(8) :: f_norm                          ! norm used for convergence check of poisson solver
     character(len=100) :: T_ini_type        ! initial temperature profile type
     character(len=100) :: outputfilename    ! output file name
     real(8), allocatable:: T(:,:)               ! temperature profile
@@ -90,6 +91,8 @@ program dry_convection
     if (trim(T_ini_type) == 'rand') then
         ! Fill T with random numbers
         call RANDOM_NUMBER(T)
+        T(1, :) = 1.0
+        T(nx, :) = 0.0
     else if (trim(T_ini_type) == 'cosine') then   !TODO:: change to cosine
         call initialize_temperature_cosine(T, nx, ny)
     else
@@ -165,6 +168,22 @@ program dry_convection
     endif
     close(10)
 
+    ! save d2T for plotting
+    open(unit=10, file=trim('data/ex_7/d2T.csv'), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
+    ! save advection for plotting
+    open(unit=10, file=trim('data/ex_7/advection.csv'), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
 
     ! Save test derivertivs:
     
@@ -187,9 +206,9 @@ program dry_convection
 
     
 
-
+    k = 0
     ! Integration loop
-    do k = 1, int(nsteps)
+    do while (time < total_time)
 
         ! calc first derivertiv of temperature in x direction:
         !Compute dT/dx
@@ -201,26 +220,38 @@ program dry_convection
 
 
         ! Determine 𝜔 from Ra dT/dx using the Poisson solver (Equation 2)
-        res_rms = Vcycle_2DPoisson(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-        print *, 'res_rms verena of w = ', res_rms
-        call write_to_csv_real8('data/ex_7/w.csv', w)
+        ! res_rms = Vcycle_2DPoisson(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
+        ! print *, 'res_rms verena of w = ', res_rms
+        ! call write_to_csv_real8('data/ex_7/w.csv', w)
 
         !Duetsch Sol:
-        res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-        print *, 'res_rms duetsch of w = ', res_rms_duetsch
+        f_norm = SQRT(SUM((-Ra*Tdx)**2)/(nx*ny))
+        res_rms_duetsch = f_norm
+        do while (res_rms_duetsch/f_norm > max_err)
+            res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
+            print *, 'res_rms duetsch of w = ', res_rms_duetsch
+        end do
+        ! res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
+        ! print *, 'res_rms duetsch of w = ', res_rms_duetsch
+        call write_to_csv_real8('data/ex_7/w.csv', w_duetsch)
 
 
-        call FiniteDifference2D_real8(w/(-Ra), h, d2w)
-        call write_to_csv_real8('data/ex_7/d2w.csv', d2w)
+        !call FiniteDifference2D_real8(w_duetsch/(-Ra), h, d2w)
+        !call write_to_csv_real8('data/ex_7/d2w.csv', d2w)
 
 
         ! Compute stream function 𝜓 from 𝜔 using the Poisson solver (Equation 3)
-        res_rms = Vcycle_2DPoisson(psi, -w, h, alpha)  ! TODO:: check if - is correct
+        f_norm = SQRT(SUM((-w_duetsch)**2)/(nx*ny))
+        res_rms_duetsch = f_norm
+        do while (res_rms_duetsch/f_norm > max_err)
+            res_rms_duetsch = Vcycle_2DPoisson_duetsch(psi, -w_duetsch, h, alpha) ! TODO:: check if - is correct
+            print *, 'res_rms duetsch of psi = ', res_rms_duetsch
+        end do
+        ! res_rms = Vcycle_2DPoisson_duetsch(psi, -w_duetsch, h, alpha)  ! TODO:: check if - is correct
         call write_to_csv_real8('data/ex_7/psi.csv', psi)
 
-        call FiniteDifference2D_real8(-psi, h, d2psi)
-        call write_to_csv_real8('data/ex_7/d2psi.csv', d2psi)
-
+        !call FiniteDifference2D_real8(-psi, h, d2psi)
+        !call write_to_csv_real8('data/ex_7/d2psi.csv', d2psi)
 
 
         ! Compute the wind speeds 𝑢 and 𝑣 from 𝜓
@@ -240,14 +271,16 @@ program dry_convection
 
         ! ∇2𝑇:
         call FiniteDifference2D_real8(T, h, d2T)
+        call write_to_csv_real8('data/ex_7/d2T.csv', d2T)
         
         ! 𝑣⃑ * ∇𝑇 = advection
         call advection2D_real8(T, h, u, v, advection)
+        call write_to_csv_real8('data/ex_7/advection.csv', advection)
 
 
 
         ! calc next T
-        !T_new = T + h* (d2T + advection)
+        T_new = T + h* (d2T + advection)
 
         T = T_new
         call write_to_csv_real8('data/ex_7/T.csv', T)
@@ -256,22 +289,10 @@ program dry_convection
 
         ! track time. not relevant for calc but since h is changing we need to track time
         time = time + h
+        k = k + 1
         
-
-
-
-
-
-
-
-
-
-
-
-
-
         ! Maxiter to protect from to long runtimes and mage num instabel behavior debuggin easier
-        if (k > 1) then
+        if (k > 10) then
             exit
         end if
     end do
