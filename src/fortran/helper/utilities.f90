@@ -53,6 +53,36 @@ contains
         ! Close the file
         close(20)
     end subroutine write_to_csv
+
+    subroutine write_to_csv_real8(outfile, T)
+        implicit none
+        real(8), dimension(:,:), intent(in) :: T
+        character(len=*), intent(in)  :: outfile
+        integer :: io, i, j
+
+        ! Open the file for appending; create a new one if it doesn't exist
+        open(unit=20, file=trim(outfile), status='unknown', action='write', iostat=io, position='append')
+        if (io /= 0) then
+            print *, "Failed to open file:", trim(outfile)
+            return
+        end if
+
+
+        ! Write the matrix to the file
+        do i = 1, size(T, 1)
+            do j = 1, size(T, 2)
+                if (j == size(T, 2)) then
+                    write(20, '(F12.2)') T(i, j)  ! Last element in the row
+                else
+                    write(20, '(F12.2, A)', advance='no') T(i, j), ','  ! Elements with comma
+                end if
+            end do
+            write(20, *)  ! Newline for the next row
+        end do
+
+        ! Close the file
+        close(20)
+    end subroutine write_to_csv_real8
 end module csv_writer
 
 
@@ -137,6 +167,29 @@ module namelist_utilities
         close(unit=10)
     end subroutine read_namelist_ex6
 
+    subroutine read_namelist_ex7(filename, nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: nx, ny
+        real, intent(out) :: a_adv, a_diff, total_time, max_err, Ra
+        character(len=*), intent(out) ::T_ini_type
+    
+        namelist /INPUTS/ nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type
+    
+        integer :: io
+        open(unit=10, file=filename, status='old', iostat=io)
+        if (io /= 0) then
+            print *, "Failed to open namelist file:", filename
+            return
+        end if
+    
+        read(unit=10, nml=INPUTS, iostat=io)
+        if (io /= 0) then
+            print *, "Error reading namelist"
+        end if
+    
+        close(unit=10)
+    end subroutine read_namelist_ex7
+
 end module namelist_utilities
 
 
@@ -191,5 +244,30 @@ contains
 end module boundaries_ex5
 
 
+
+module T_inits
+    use constants_module
+    implicit none
+contains
+subroutine initialize_temperature_cosine(T, nx, ny)
+    implicit none
+    integer, intent(in) :: nx, ny
+    real(8), intent(out) :: T(nx, ny)
+    integer :: i, j
+    real(8) :: x
+
+    
+
+    ! Initialize the temperature array with a cosine function
+    do j = 1, ny
+        do i = 1, nx
+            x = real(i - 1)  ! x coordinate
+            T(i, j) = 0.5 * (1.0 + cos(3.0 * pi * x / nx))
+        end do
+    end do
+    T(1, :) = 1.0
+    T(nx, :) = 0.0
+end subroutine initialize_temperature_cosine
+end module T_inits
 
 

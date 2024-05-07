@@ -136,6 +136,8 @@ module poisson_solver_utilities
             
             nx = SIZE(u,1); ny = SIZE(u,2) ! must be power of 2 plus 1
             nxc = (nx+1)/2; nyc = (ny+1)/2 ! coarse grid
+
+            
             
             IF (MIN(nx,ny) > 5) THEN
             
