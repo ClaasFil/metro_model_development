@@ -43,6 +43,11 @@ contains
         real(8), intent(out) :: second_derivative(:,:)
         integer :: n, m, i, j
         
+        !call print_matrix(y)
+        !print *, 'h' , h
+
+
+
         n = size(y, 1)
         m = size(y, 2)
         
@@ -58,16 +63,16 @@ contains
 
         ! Apply boundary conditions
         ! Top and bottom rows
-        do j = 1, m
-            second_derivative(1,j) = (y(2,j) - y(1,j)) / h**2  ! Top row
-            second_derivative(n,j) = (y(n-1,j) - y(n,j)) / h**2  ! Bottom row
-        end do
+        !do j = 1, m
+        !    second_derivative(1,j) = (y(2,j) - y(1,j)) / h**2  ! Top row
+        !    second_derivative(n,j) = (y(n-1,j) - y(n,j)) / h**2  ! Bottom row
+        !end do
 
         ! Left and right columns
-        do i = 2, n - 1
-            second_derivative(i,1) = (y(i,2) - y(i,1)) / h**2  ! Left column
-            second_derivative(i,m) = (y(i,m-1) - y(i,m)) / h**2  ! Right column
-        end do
+        !do i = 2, n - 1
+        !    second_derivative(i,1) = (y(i,2) - y(i,1)) / h**2  ! Left column
+        !    second_derivative(i,m) = (y(i,m-1) - y(i,m)) / h**2  ! Right column
+        !end do
 
     end subroutine FiniteDifference2D_real8
 
