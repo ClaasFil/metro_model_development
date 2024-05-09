@@ -245,6 +245,38 @@ end module boundaries_ex5
 
 
 
+module boundaries_ex7
+    !use matrix_utilities
+    implicit none
+contains
+    subroutine boundaries_T(matrix)
+        real(8), dimension(:, :), intent(inout) :: matrix
+        integer :: n, m
+
+        n = size(matrix, 1)
+        m = size(matrix, 2)
+        
+        !call print_matrix(matrix)
+        ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
+        matrix(:, 1) = 1.0
+        matrix(:, m) = 0.0
+
+        matrix(1,:) = matrix(2,:)
+        matrix(n,:) = matrix(n-1,:)
+
+    
+        !call print_matrix(matrix)
+
+
+    end subroutine boundaries_T
+
+
+   
+
+end module boundaries_ex7
+
+
+
 module T_inits
     use constants_module
     implicit none
