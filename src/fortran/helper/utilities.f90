@@ -258,8 +258,8 @@ contains
         
         !call print_matrix(matrix)
         ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
-        matrix(:, 1) = 1.0
-        matrix(:, m) = 0.0
+        matrix(:, 1) = 0.0
+        matrix(:, m) = 1.0
 
         matrix(1,:) = matrix(2,:)
         matrix(n,:) = matrix(n-1,:)

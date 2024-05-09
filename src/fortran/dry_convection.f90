@@ -7,7 +7,7 @@ program dry_convection
     use matrix_utilities
     use boundaries_ex7
     use T_inits
-    use poisson_solver
+    ! use poisson_solver
     use poisson_duetsch
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
@@ -19,10 +19,11 @@ program dry_convection
     real :: total_time                       ! total simulation time
     real :: max_err                          ! maximum error
     real :: Ra                               ! Rayleigh number
-    real(8) :: h                                ! grid spacing
+    real(8) :: h                             ! grid spacing
+    real(8) :: dt                            ! time step
     real(8) :: alpha = 1.                         ! relaxation parameter
     REAL(8) :: res_rms                          ! root mean square residue 
-    REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track tiem
+    REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track time
     REAL(8) :: f_norm                          ! norm used for convergence check of poisson solver
     character(len=100) :: T_ini_type        ! initial temperature profile type
     character(len=100) :: outputfilename    ! output file name
@@ -217,7 +218,7 @@ program dry_convection
     k = 0
     ! Integration loop
     do while (time < total_time)
-        print *, '---------------------------------------------------'
+        !print *, '---------------------------------------------------'
         print *, 'iter = ', k
         print *, 'h = ', h
 
@@ -233,7 +234,7 @@ program dry_convection
 
         call write_to_csv_real8('data/ex_7/Tdx.csv', Tdx)
         ! print max element
-        print *, 'max Tdx = ', MAXVAL(ABS(Tdx))
+        !print *, 'max Tdx = ', MAXVAL(ABS(Tdx))
 
         !print *, 'h = ', h
         !print *, 'alpha = ', alpha
@@ -253,7 +254,7 @@ program dry_convection
         ! res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
         ! print *, 'res_rms duetsch of w = ', res_rms_duetsch
         call write_to_csv_real8('data/ex_7/w.csv', w_duetsch)
-        print *, 'max w = ', MAXVAL(ABS(w_duetsch))
+        !print *, 'max w = ', MAXVAL(ABS(w_duetsch))
 
         ! test w by calculating d2w
         call FiniteDifference2D_real8(w_duetsch/(-Ra), h, d2w)
@@ -270,7 +271,7 @@ program dry_convection
         end do
         ! res_rms = Vcycle_2DPoisson_duetsch(psi, -w_duetsch, h, alpha)  ! TODO:: check if - is correct
         call write_to_csv_real8('data/ex_7/psi.csv', psi)
-        print *, 'max psi = ', MAXVAL(ABS(psi))
+        !print *, 'max psi = ', MAXVAL(ABS(psi))
 
         call FiniteDifference2D_real8(-psi, h, d2psi)
         !print *, 'max d2psi = ', MAXVAL(ABS(d2psi))
@@ -285,7 +286,8 @@ program dry_convection
 
         ! Compute the time step from a_adv, a_diff and the maximum wind speed in the
         ! we have no kappa this time like in ex5
-        h = MIN(a_diff*h**2, a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))
+        dt = MIN(a_diff*h**2, a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))
+        print *, 'dt = ', dt
         
         ! TODO: Müsste sich hier nciht auch nsteps änder?
 
@@ -305,44 +307,29 @@ program dry_convection
         call advection2D_real8(T, h, u, v, advection)
         call write_to_csv_real8('data/ex_7/advection.csv', advection)
 
-        print *, 'max advection = ', MAXVAL(ABS(advection))
-        print *, 'max d2T = ', MAXVAL(ABS(d2T))
+        !print *, 'max advection = ', MAXVAL(ABS(advection))
+        !print *, 'max d2T = ', MAXVAL(ABS(d2T))
 
         ! calc next T
-        T_new = T + h* (d2T + advection)
+        T_new = T + dt * (d2T + advection)
 
         T = T_new
         call write_to_csv_real8('data/ex_7/T.csv', T)
 
-
-
-        ! track time. not relevant for calc but since h is changing we need to track time
-        time = time + h
+        ! track time and iterations
+        time = time + dt
         k = k + 1
         
-        ! Maxiter to protect from to long runtimes and mage num instabel behavior debuggin easier
-        if (k >= 1) then
+        ! Maxiter to protect from to long runtimes and make numerically instabel behavior debugging easier
+        if (k >= 100) then
             exit
         end if
     end do
 
 
-
-    
-
-
-
-
-
-
-
     print *, 'I am a zebra'
 
 
-
-
-
-    
 end program dry_convection
 
 
