@@ -8,7 +8,7 @@ program dry_convection
     use boundaries_ex7
     use T_inits
     ! use poisson_solver
-    use poisson_duetsch
+    use poisson_solver_utilities
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
     integer :: nx=4, ny=4                    ! number of grid points in x and y
@@ -68,7 +68,7 @@ program dry_convection
     allocate(advection(nx, ny), d2T(nx, ny))
 
 
-    ! Initialize temperature array
+    ! Initialize arrays
     T = 0.0
     T_new = 0.0
     w = 0.0
@@ -79,13 +79,11 @@ program dry_convection
     d2T = 0.0
     advection = 0.0
 
-    ! test derivetives:
+    ! Test derivatives:
     allocate(d2psi(nx, ny), d2w(nx, ny), w_duetsch(nx, ny))
     d2psi = 0.0
     d2w = 0.0
     w_duetsch = 0.0
-
-
 
     h = 1.0 / (ny - 1)
 
@@ -219,14 +217,13 @@ program dry_convection
     ! Integration loop
     do while (time < total_time)
         !print *, '---------------------------------------------------'
-        print *, 'iter = ', k
-        print *, 'h = ', h
+        ! print *, 'iter = ', k
+        ! print *, 'h = ', h
 
 
         ! apply boundary conditions
         call boundaries_T(T)
 
-    
 
         ! calc first derivertiv of temperature in x direction:
         !Compute dT/dx
@@ -238,38 +235,35 @@ program dry_convection
 
         !print *, 'h = ', h
         !print *, 'alpha = ', alpha
-        ! Determine 𝜔 from Ra dT/dx using the Poisson solver (Equation 2)
-        ! res_rms = Vcycle_2DPoisson(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-        ! print *, 'res_rms verena of w = ', res_rms
-        ! call write_to_csv_real8('data/ex_7/w.csv', w)
 
-        !Duetsch Sol:
+
+        ! Determine 𝜔 from Ra dT/dx using the Poisson solver (Equation 2)
         f_norm = SQRT(SUM((-Ra*Tdx)**2)/(nx*ny))
-        res_rms_duetsch = f_norm
-        do while (res_rms_duetsch/f_norm > max_err)
-            res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-            !print *, 'res_rms duetsch of w = ', res_rms_duetsch
+        res_rms = f_norm
+        do while (res_rms/f_norm > max_err)
+            res_rms = Vcycle_2DPoisson(w, -Ra*Tdx, h, alpha) ! TODO:: check if - is correct
+            ! print *, 'res_rms of w = ', res_rms
         end do
 
-        ! res_rms_duetsch = Vcycle_2DPoisson_duetsch(w_duetsch, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
-        ! print *, 'res_rms duetsch of w = ', res_rms_duetsch
-        call write_to_csv_real8('data/ex_7/w.csv', w_duetsch)
-        !print *, 'max w = ', MAXVAL(ABS(w_duetsch))
+        ! res_rms = Vcycle_2DPoisson_duetsch(w, -Ra*Tdx ,h, alpha) ! TODO:: check if - is correct
+        ! print *, 'res_rms  of w = ', res_rms
+        call write_to_csv_real8('data/ex_7/w.csv', w)
+        !print *, 'max w = ', MAXVAL(ABS(w))
 
         ! test w by calculating d2w
-        call FiniteDifference2D_real8(w_duetsch/(-Ra), h, d2w)
+        call FiniteDifference2D_real8(w/(-Ra), h, d2w)
         call write_to_csv_real8('data/ex_7/d2w.csv', d2w)
         !print *, 'max d2w = ', MAXVAL(ABS(d2w))
 
 
         ! Compute stream function 𝜓 from 𝜔 using the Poisson solver (Equation 3)
-        f_norm = SQRT(SUM((-w_duetsch)**2)/(nx*ny))
-        res_rms_duetsch = f_norm
-        do while (res_rms_duetsch/f_norm > max_err)
-            res_rms_duetsch = Vcycle_2DPoisson_duetsch(psi, -w_duetsch, h, alpha) ! TODO:: check if - is correct
-            !print *, 'res_rms duetsch of psi = ', res_rms_duetsch
+        f_norm = SQRT(SUM((-w)**2)/(nx*ny))
+        res_rms = f_norm
+        do while (res_rms/f_norm > max_err)
+            res_rms = Vcycle_2DPoisson(psi, -w, h, alpha) ! TODO:: check if - is correct
+            !print *, 'res_rms  of psi = ', res_rms
         end do
-        ! res_rms = Vcycle_2DPoisson_duetsch(psi, -w_duetsch, h, alpha)  ! TODO:: check if - is correct
+        ! res_rms = Vcycle_2DPoisson(psi, -w, h, alpha)  ! TODO:: check if - is correct
         call write_to_csv_real8('data/ex_7/psi.csv', psi)
         !print *, 'max psi = ', MAXVAL(ABS(psi))
 
@@ -287,9 +281,7 @@ program dry_convection
         ! Compute the time step from a_adv, a_diff and the maximum wind speed in the
         ! we have no kappa this time like in ex5
         dt = MIN(a_diff*h**2, a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))
-        print *, 'dt = ', dt
-        
-        ! TODO: Müsste sich hier nciht auch nsteps änder?
+        ! print *, 'dt = ', dt
 
 
         ! Compute ∇2𝑇 and 𝑣⃑ * ∇𝑇 using the subroutines from Exercise 5
@@ -311,7 +303,7 @@ program dry_convection
         !print *, 'max d2T = ', MAXVAL(ABS(d2T))
 
         ! calc next T
-        T_new = T + dt * (d2T + advection)
+        T_new = T + dt * (d2T - advection)
 
         T = T_new
         call write_to_csv_real8('data/ex_7/T.csv', T)
@@ -321,7 +313,7 @@ program dry_convection
         k = k + 1
         
         ! Maxiter to protect from to long runtimes and make numerically instabel behavior debugging easier
-        if (k >= 100) then
+        if (k >= 1000) then
             exit
         end if
     end do
@@ -331,14 +323,4 @@ program dry_convection
 
 
 end program dry_convection
-
-
-
-
-
-
-
-
-
-
 
