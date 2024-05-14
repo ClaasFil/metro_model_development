@@ -42,12 +42,11 @@ module poisson_solver_utilities
             double precision, INTENT(OUT) :: res_f(:,:)
             double precision, INTENT(IN) :: u(:,:), f(:,:), h
             integer :: i, j, nx, ny
-            double precision :: res_rms
 
             nx = SIZE(u, 1)
             ny = SIZE(u, 2)
             
-            res_rms = 0.0D0
+            res_f = 0.0D0
             
             ! Calcualte residual
             DO j = 2, ny - 1 
@@ -59,23 +58,21 @@ module poisson_solver_utilities
         end subroutine residue_2DPoisson
 
 
-        subroutine restrict(res_f,res_c)
-            double precision, INTENT(IN) :: res_f(:,:)
-            double precision, allocatable, INTENT(OUT) :: res_c(:,:)
-            INTEGER :: i, j, nx, ny, nxc, nyc
-
-            nx = size(res_f,1); ny = size(res_f,2)
+        SUBROUTINE restrict(fine,coarse)
+            IMPLICIT NONE
+            REAL(8), INTENT(IN) :: fine(:,:)
+            REAL(8), INTENT(OUT) :: coarse(:,:)
+            INTEGER :: nx, ny, nxc, nyc, i, j
+          
+            nx = SIZE(fine,1); ny=SIZE(fine,2)
             nxc = (nx+1)/2; nyc = (ny+1)/2
-
-            allocate(res_c(nxc, nyc))
-            res_c = 0.0
-
-            do j = 1, nyc
-                do i = 1, nxc
-                    res_c(i,j) = res_f(2*i-1, 2*j-1) 
-                end do
-            end do
-        end subroutine restrict
+          
+            coarse = 0.
+          
+            DO CONCURRENT (i=1:nxc, j=1:nyc)
+              coarse(i,j) = fine(2*i-1,2*j-1)
+            END DO
+        END SUBROUTINE restrict
 
 
         subroutine prolongate(corr_c,corr_f)
@@ -96,35 +93,32 @@ module poisson_solver_utilities
                         corr_f(2*i-1,2*j) = (corr_c(i,j) + corr_c(i, j+1))/2
                     end if
                     if (i < size(corr_c,1) .and. j < size(corr_c,2)) then
-                        corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1))/2
+                        ! corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1))/2
+                        corr_f(2*i,2*j) = (corr_c(i,j) + corr_c(i+1, j+1) + corr_c(i+1,j) + corr_c(i, j+1))/4
                     end if
                 end do
             end do
         end subroutine prolongate
 
 
-        subroutine prolongate2(corr_c,corr_f) ! This version causes a SIGSEV Segmentation Fault Error
-            double precision, INTENT(IN) :: corr_c(:,:)
-            double precision, allocatable, INTENT(OUT) :: corr_f(:,:)
-            INTEGER :: i, j, nx, ny, nxc, nyc
-
-            nxc = size(corr_c,1); nyc = size(corr_c,2)
+        SUBROUTINE prolongate2(coarse,fine)
+            IMPLICIT NONE
+            REAL(8), INTENT(IN) :: coarse(:,:)
+            REAL(8), INTENT(OUT) :: fine(:,:)
+            INTEGER :: nx, ny, nxc, nyc, i, j
+          
+            nxc = SIZE(coarse,1); nyc=SIZE(coarse,2)
             nx = 2*nxc-1; ny = 2*nyc-1
-
-            corr_f = 0.0D0
-
-            !allocate(corr_f(2*size(corr_c,1)-1, 2*size(corr_c,2)-1))
-            PRINT *, 'size(corr_c,1):', size(corr_c,1)
-            corr_f = 0.0D0
-            do j = 1, size(corr_c,2)
-                do i = 1, size(corr_c,1)
-                    corr_f(i,j) = (corr_c(FLOOR((i+1)/2.), FLOOR((j+1)/2.)) &
-                                + corr_c(FLOOR((i+1)/2.), CEILING((j+1)/2.)) &
-                                + corr_c(CEILING((i+1)/2.), FLOOR((j+1)/2.)) &
-                                + corr_c(CEILING((i+1)/2.), CEILING((j+1)/2.)))/4.0
-                end do
-            end do
-        end subroutine prolongate2
+          
+            fine = 0.
+          
+            DO CONCURRENT (i=1:nx, j=1:ny)
+              fine(i,j) = (coarse(FLOOR  ((i+1)/2.), FLOOR  ((j+1)/2.)) &
+                         + coarse(FLOOR  ((i+1)/2.), CEILING((j+1)/2.)) &
+                         + coarse(CEILING((i+1)/2.), FLOOR  ((j+1)/2.)) &
+                         + coarse(CEILING((i+1)/2.), CEILING((j+1)/2.))) / 4.
+            END DO
+          END SUBROUTINE prolongate2
 
 
         RECURSIVE FUNCTION Vcycle_2DPoisson(u,f,h,alpha) RESULT (res_rms)
@@ -137,6 +131,8 @@ module poisson_solver_utilities
             
             nx = SIZE(u,1); ny = SIZE(u,2) ! must be power of 2 plus 1
             nxc = (nx+1)/2; nyc = (ny+1)/2 ! coarse grid
+
+            
             
             IF (MIN(nx,ny) > 5) THEN
             
