@@ -8,7 +8,7 @@ program poisson
     double precision :: h, alpha=1, res_rms, f_norm
     double precision, allocatable :: u(:,:), f(:,:)
     character(len=9) :: init_State='spike', output_u='poisson_u', output_f='poisson_f'
-    logical :: multigrid=.FALSE.
+    logical :: multigrid=.TRUE.
     NAMELIST /inputs/ nx, ny, init_State, multigrid, alpha, output_u, output_f
 
     !read input parameters
