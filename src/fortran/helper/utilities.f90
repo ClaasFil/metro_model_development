@@ -61,7 +61,7 @@ contains
         integer :: io, i, j
 
         ! Open the file for appending; create a new one if it doesn't exist
-        open(unit=20, file=trim(outfile), status='unknown', action='write', iostat=io, position='append')
+        open(unit=20, file=trim(outfile), status='unknown', iostat=io, position='append')
         if (io /= 0) then
             print *, "Failed to open file:", trim(outfile)
             return
@@ -84,6 +84,31 @@ contains
         close(20)
     end subroutine write_to_csv_real8
 end module csv_writer
+
+module binary_writer
+    implicit none
+contains
+    subroutine write_to_binary_real8(outfile, T)
+        implicit none
+        real(8), dimension(:,:), intent(in) :: T
+        character(len=*), intent(in)  :: outfile
+        integer :: io, i, j, ny, nx
+
+        OPEN(1, FILE=outfile,ACCESS='DIRECT', STATUS='OLD', RECL=8)
+            
+        nx = size(T, 1)
+        ny = size(T, 2)
+
+        DO j = 1 , ny
+            DO i = 1 , nx
+                write(1, rec=(j-1)*nx+i) T(i,j)
+            END DO
+        END DO
+
+        
+        close(1)
+    end subroutine write_to_binary_real8
+end module binary_writer
 
 
 module namelist_utilities
@@ -258,8 +283,8 @@ contains
         
         !call print_matrix(matrix)
         ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
-        matrix(:, 1) = 1.0
         matrix(:, m) = 0.0
+        matrix(:, 1) = 1.0
 
         matrix(1,:) = matrix(2,:)
         matrix(n,:) = matrix(n-1,:)

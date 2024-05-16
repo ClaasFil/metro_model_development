@@ -1,4 +1,4 @@
-src/notebooks/week5.ipynb filter=lfs diff=lfs merge=lfs -text
-data/ex_5/rand/B1/adv_out.csv filter=lfs diff=lfs merge=lfs -text
-*.csv filter=lfs diff=lfs merge=lfs -text
-*.ipynb filter=lfs diff=lfs merge=lfs -text
+#src/notebooks/week5.ipynb filter=lfs diff=lfs merge=lfs -text
+#data/ex_5/rand/B1/adv_out.csv filter=lfs diff=lfs merge=lfs -text
+#*.csv filter=lfs diff=lfs merge=lfs -text
+#*.ipynb filter=lfs diff=lfs merge=lfs -text
