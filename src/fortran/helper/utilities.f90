@@ -94,7 +94,7 @@ contains
         character(len=*), intent(in)  :: outfile
         integer :: io, i, j, ny, nx
 
-        OPEN(1, FILE=outfile,ACCESS='DIRECT', STATUS='OLD', RECL=8)
+        OPEN(1, FILE=outfile,ACCESS='DIRECT', RECL=8)
             
         nx = size(T, 1)
         ny = size(T, 2)

@@ -7,8 +7,8 @@ program dry_convection
     use matrix_utilities
     use boundaries_ex7
     use T_inits
-    use poisson_solver
-    !use poisson_solver_utilities
+    !use poisson_solver
+    use poisson_solver_utilities
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
     integer :: nx=4, ny=4                    ! number of grid points in x and y
@@ -26,7 +26,7 @@ program dry_convection
     REAL(8) :: res_rms                          ! root mean square residue 
     REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track time
     REAL(8) :: f_norm                          ! norm used for convergence check of poisson solver
-    character(len=100) :: T_ini_type        ! initial temperature profile type
+    character(len=100) :: T_ini_type = "cosine"        ! initial temperature profile type
     character(len=100) :: outputfilename    ! output file name
     real(8), allocatable:: T(:,:)               ! temperature profile
     real(8), allocatable:: T_new(:,:)           ! new temperature profile
@@ -85,8 +85,8 @@ program dry_convection
     if (trim(T_ini_type) == 'rand') then
         ! Fill T with random numbers
         call RANDOM_NUMBER(T)
-        T(1, :) = 1.0
-        T(nx, :) = 0.0
+        T(:, 1) = 1.0
+        T(:, ny) = 0.0
     else if (trim(T_ini_type) == 'cosine') then  
         call initialize_temperature_cosine(T, nx, ny)
 
@@ -98,11 +98,7 @@ program dry_convection
         stop
     end if
 
-
-
-
-
-    outputfilename = 'data/ex_7/T.csv'
+    outputfilename = 'data/ex_7/T_cos.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
         print *, 'Error opening file:', io_error
@@ -111,7 +107,7 @@ program dry_convection
     
     close(10)
 
-    call write_to_csv_real8('data/ex_7/T.csv', T)
+    call write_to_csv_real8('data/ex_7/T_cos.csv', T)
 
 
     
@@ -148,7 +144,7 @@ program dry_convection
 
         ! Compute the wind speeds 𝑢 and 𝑣 from 𝜓
         call dy(psi, h, u)
-        call dx(psi, h, v)
+        call dx(-psi, h, v)
 
 
         ! Compute the time step from a_adv, a_diff and the maximum wind speed in the
@@ -176,7 +172,7 @@ program dry_convection
 
         ! only plot a certain amount of matix to not hav to large files
         if (mod(k, 10) == 0) then
-            call write_to_csv_real8('data/ex_7/T.csv', T)
+            call write_to_csv_real8('data/ex_7/T_cos.csv', T)
         end if
     end do
 
