@@ -20,6 +20,7 @@ program dry_convection
     real :: total_time                       ! total simulation time
     real :: max_err                          ! maximum error
     real :: Ra                               ! Rayleigh number
+    real :: Pr                              ! Prandtl number
     real(8) :: h                             ! grid spacing
     real(8) :: dt                            ! time step
     real(8) :: alpha = 1.                         ! relaxation parameter
@@ -43,7 +44,7 @@ program dry_convection
     
 
     !read input parameters
-    call read_namelist_ex7('data/namelist/ex_7_cos.nml', nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type)
+    call read_namelist_ex8('data/namelist/ex_8_cos.nml', nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type, Pr)
     
     ! print namelist values
     print *, 'nx = ', nx
@@ -54,6 +55,7 @@ program dry_convection
     print *, 'max_err = ', max_err
     print *, 'Ra = ', Ra
     print *, 'T_ini_type = ', T_ini_type
+    print *, 'Pr = ', Pr
 
     !nx = 10
     !ny = 10
@@ -98,7 +100,7 @@ program dry_convection
         stop
     end if
 
-    outputfilename = 'data/ex_7/T_cos.csv'
+    outputfilename = 'data/ex_8/T_cos.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
         print *, 'Error opening file:', io_error
@@ -107,17 +109,12 @@ program dry_convection
     
     close(10)
 
-    call write_to_csv_real8('data/ex_7/T_cos.csv', T)
+    call write_to_csv_real8('data/ex_8/T_cos.csv', T)
 
-
-    
-    
 
     k = 0
     do while (time < total_time)
         call boundaries_T(T)
-
-        
 
         ! calc first derivertiv of temperature in x direction:
         !Compute dT/dx
@@ -139,7 +136,6 @@ program dry_convection
             res_rms = Vcycle_2DPoisson(psi, -w, h, alpha) 
 
         end do
-
 
 
         ! Compute the wind speeds 𝑢 and 𝑣 from 𝜓
@@ -165,14 +161,14 @@ program dry_convection
         time = time + dt
         k = k + 1
         
-        ! Maxiter to protect from to long runtimes and make numerically instabel behavior debugging easier
+        ! Maxiter to protect from to long runtimes and make numerically instable behavior debugging easier
         if (k >= 2000) then
             exit
         end if
 
         ! only plot a certain amount of matix to not hav to large files
         if (mod(k, 10) == 0) then
-            call write_to_csv_real8('data/ex_7/T_cos.csv', T)
+            call write_to_csv_real8('data/ex_8/T_cos.csv', T)
         end if
     end do
 
