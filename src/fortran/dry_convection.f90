@@ -102,7 +102,7 @@ program dry_convection
         stop
     end if
 
-    outputfilename = 'data/ex_8/T_cos.csv'
+    outputfilename = 'data/ex_8/T_cos_Pr001.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
         print *, 'Error opening file:', io_error
@@ -111,7 +111,7 @@ program dry_convection
     
     close(10)
 
-    call write_to_csv_real8('data/ex_8/T_cos.csv', T)
+    call write_to_csv_real8(outputfilename, T)
 
 
     k = 0
@@ -125,6 +125,7 @@ program dry_convection
         do while (res_rms/f_norm > max_err)
             res_rms = Vcycle_2DPoisson(psi, -w, h, alpha) 
         end do
+        call boundaries_zero(psi)
 
         ! Compute the wind speeds 𝑢 and 𝑣 from 𝜓
         call dy(psi, h, u)
@@ -155,21 +156,23 @@ program dry_convection
         ! calc next 𝜔
         w_new = w + dt * (Pr * d2w + Pr * RadTdx - vdw)
         w = w_new
+        call boundaries_zero(w)
 
         ! track time and iterations
         time = time + dt
         k = k + 1
         
         ! Maxiter to protect from to long runtimes and make numerically instable behavior debugging easier
-        if (k >= 2000) then
+        if (k >= 4000) then
             exit
         end if
 
         ! only plot a certain amount of matix to not hav to large files
-        if (mod(k, 10) == 0) then
-            call write_to_csv_real8('data/ex_8/T_cos.csv', T)
-        end if
+        !if (mod(k, 10) == 0) then
+            !call write_to_csv_real8(outputfilename, T)
+        !end if
     end do
+    call write_to_csv_real8(outputfilename, T)
 
 
 end program dry_convection

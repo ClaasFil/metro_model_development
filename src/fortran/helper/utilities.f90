@@ -318,6 +318,27 @@ contains
 
     end subroutine boundaries_T
 
+    subroutine boundaries_zero(matrix)
+        real(8), dimension(:, :), intent(inout) :: matrix
+        integer :: n, m
+
+        n = size(matrix, 1)
+        m = size(matrix, 2)
+        
+        !call print_matrix(matrix)
+        ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
+        matrix(:, m) = 0.0
+        matrix(:, 1) = 0.0
+
+        matrix(1,:) = 0.0
+        matrix(n,:) = 0.0
+
+    
+        !call print_matrix(matrix)
+
+
+    end subroutine boundaries_zero
+
 
    
 
