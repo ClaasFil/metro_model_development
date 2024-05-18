@@ -94,7 +94,7 @@ contains
         character(len=*), intent(in)  :: outfile
         integer :: io, i, j, ny, nx
 
-        OPEN(1, FILE=outfile,ACCESS='DIRECT', STATUS='OLD', RECL=8)
+        OPEN(1, FILE=outfile,ACCESS='DIRECT', RECL=8)
             
         nx = size(T, 1)
         ny = size(T, 2)
@@ -215,6 +215,29 @@ module namelist_utilities
         close(unit=10)
     end subroutine read_namelist_ex7
 
+    subroutine read_namelist_ex8(filename, nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type, Pr)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: nx, ny
+        real, intent(out) :: a_adv, a_diff, total_time, max_err, Ra, Pr
+        character(len=*), intent(out) ::T_ini_type
+    
+        namelist /INPUTS/ nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type, Pr
+    
+        integer :: io
+        open(unit=10, file=filename, status='old', iostat=io)
+        if (io /= 0) then
+            print *, "Failed to open namelist file:", filename
+            return
+        end if
+    
+        read(unit=10, nml=INPUTS, iostat=io)
+        if (io /= 0) then
+            print *, "Error reading namelist"
+        end if
+    
+        close(unit=10)
+    end subroutine read_namelist_ex8
+
 end module namelist_utilities
 
 
@@ -294,6 +317,27 @@ contains
 
 
     end subroutine boundaries_T
+
+    subroutine boundaries_zero(matrix)
+        real(8), dimension(:, :), intent(inout) :: matrix
+        integer :: n, m
+
+        n = size(matrix, 1)
+        m = size(matrix, 2)
+        
+        !call print_matrix(matrix)
+        ! Apply boundary conditions T = 1 at y = 0 (j=1), T = 0 at y = ymax (j=ny)
+        matrix(:, m) = 0.0
+        matrix(:, 1) = 0.0
+
+        matrix(1,:) = 0.0
+        matrix(n,:) = 0.0
+
+    
+        !call print_matrix(matrix)
+
+
+    end subroutine boundaries_zero
 
 
    
