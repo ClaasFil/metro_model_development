@@ -108,7 +108,6 @@ program dry_convection
         print *, 'Error opening file:', io_error
         stop
     endif
-    
     close(10)
 
     call write_to_csv_real8(outputfilename, T)
