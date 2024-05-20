@@ -132,7 +132,7 @@ program dry_convection
 
         ! Compute the time step from a_adv, a_diff and the maximum wind speed in the domain
         !dt = MIN(a_diff*h**2, a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))  
-        dt = MIN(a_diff*h**2/max(1,Pr), a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))  
+        dt = MIN(a_diff*h**2/max(1.,Pr), a_adv*h/MAX(MAXVAL(ABS(u)), MAXVAL(ABS(v))))  
 
         ! Calc first derivertiv of temperature in x direction:
         ! Compute Ra * dT/dx
