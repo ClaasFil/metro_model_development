@@ -86,9 +86,9 @@ contains
         
         first_derivative = 0.0  
         
-        do j = 1, m  
-            do i = 1, n - 1
-                first_derivative(i,j) = (y(i+1,j) - y(i,j)) / h  ! Forward difference
+        do j = 1, m
+            do i = 2, n - 1
+                first_derivative(i, j) = (y(i + 1, j) - y(i - 1, j)) / (2 * h)  ! Centered difference
             end do
         end do
 
@@ -107,9 +107,9 @@ contains
         
         first_derivative = 0.0  
         
-        do j = 1, m  - 1
-            do i = 1, n 
-                first_derivative(i,j) = (y(i,j + 1) - y(i,j)) / h  ! Forward difference
+        do j = 2, m - 1
+            do i = 1, n
+                first_derivative(i, j) = (y(i, j + 1) - y(i, j - 1)) / (2 * h)  ! Centered difference
             end do
         end do
 

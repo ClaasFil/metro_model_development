@@ -360,12 +360,11 @@ subroutine initialize_temperature_cosine(T, nx, ny)
     
 
     ! Initialize the temperature array with a cosine function
-    do j = 1, ny
-        do i = 1, nx
-            x = real(i - 1)  ! x coordinate
-            T(i, j) = 0.5 * (1.0 + cos(3.0 * pi * x / nx))
-        end do
+    do i = 1, nx
+        x = real(i - 1)  ! x coordinate
+        T(i, :) = 0.5 * (1.0 + cos(3.0 * pi * x / nx))
     end do
+
     T(1, :) = 1.0
     T(nx, :) = 0.0
 end subroutine initialize_temperature_cosine
