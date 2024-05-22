@@ -1,8 +1,8 @@
 &INPUTS
 nx=257
 ny=65
-a_adv=0.23
-a_diff=0.4
+a_adv=0.4
+a_diff=0.23
 total_time=0.1
 max_err=1.E-3
 Ra=1.E5

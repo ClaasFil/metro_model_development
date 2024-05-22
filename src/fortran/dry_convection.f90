@@ -16,11 +16,11 @@ program dry_convection
     integer :: k                            ! iteration counter
     integer :: nsteps                        ! number of time steps
     integer :: i, j                          ! loop indices
-    real :: a_adv, a_diff                    ! advection and diffusion coefficients
-    real :: total_time                       ! total simulation time
-    real :: max_err                          ! maximum error
-    real :: Ra                               ! Rayleigh number
-    real :: Pr                              ! Prandtl number
+    real :: a_adv=0.4, a_diff=0.23                    ! advection and diffusion coefficients
+    real :: total_time=0.1                       ! total simulation time
+    real :: max_err=1.E-3                          ! maximum error
+    real :: Ra=1.E5                               ! Rayleigh number
+    real :: Pr=0.01                              ! Prandtl number
     real(8) :: h                             ! grid spacing
     real(8) :: dt                            ! time step
     real(8) :: alpha = 1.                         ! relaxation parameter
