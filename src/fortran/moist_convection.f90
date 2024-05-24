@@ -22,9 +22,13 @@ program dry_convection
     real :: max_err = 1.E-3                          ! maximum error
     real :: Ra = 1.E5                               ! Rayleigh number
     real :: Pr = 1                             ! Prandtl number
+    real :: gamma = 0.5                 ! Dry adiabatic lapse rate
+    real :: lambda = 0.2                    ! Latent heating
+    real :: tau = 2.0                      ! Time scale for condensation
+    real :: alpha = 1.0                       !  Exponential scaling factor for saturation specific humidity
     real(8) :: h                             ! grid spacing
     real(8) :: dt                            ! time step
-    real(8) :: alpha = 1.                         ! relaxation parameter
+    real(8) :: relax = 1.                         ! relaxation parameter
     REAL(8) :: res_rms                          ! root mean square residue 
     REAL(8) :: time = 0.0                     ! time. since h is change wee neet to track time
     REAL(8) :: f_norm                          ! norm used for convergence check of poisson solver
@@ -46,7 +50,8 @@ program dry_convection
     
 
     !read input parameters
-    call read_namelist_ex8('data/namelist/ex_8_cos.nml', nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type, Pr)
+    call read_namelist_ex9('data/namelist/ex_9_cos.nml', nx, ny, a_adv, a_diff, total_time, max_err, Ra, &
+                            T_ini_type, Pr, alpha, gamma, lambda, tau)
     
     ! print namelist values
     print *, 'nx = ', nx
@@ -103,7 +108,7 @@ program dry_convection
         stop
     end if
 
-    outputfilename = 'data/ex_8/T_cos_Pr0001.csv'
+    outputfilename = 'data/ex_9/T_cos.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
         print *, 'Error opening file:', io_error
@@ -123,7 +128,7 @@ program dry_convection
         f_norm = SQRT(SUM((-w)**2)/(nx*ny))
         res_rms = f_norm
         do while (res_rms/f_norm > max_err)
-            res_rms = Vcycle_2DPoisson(psi, -w, h, alpha) 
+            res_rms = Vcycle_2DPoisson(psi, -w, h, relax) 
         end do
         call boundaries_zero(psi)
 
@@ -174,6 +179,18 @@ program dry_convection
         !end if
     end do
     call write_to_csv_real8(outputfilename, T)
+
+    contains
+
+        FUNCTION heaviside(x) RESULT(y)
+            REAL(8), INTENT(IN) :: x
+            REAL(8) :: y
+            if (x > 0.0) then
+                y = 1.0
+            else
+                y = 0.0
+            end if
+        END FUNCTION heaviside
 
 
 end program dry_convection
