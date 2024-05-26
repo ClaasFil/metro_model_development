@@ -1,44 +1,61 @@
 program nbody
     use nbody_utilities
     implicit none
-    integer, parameter :: n = 3 ! number of bodies
-    integer, parameter :: d = 2 ! dimensions
-    real :: dt, t_max, t
-    integer, parameter :: k = 1000 ! number of iterations
-    real, parameter :: G = 1  ! gravitational constant
+    integer :: n = 3 ! number of bodies
+    integer :: d = 2 ! dimensions
+    real :: dt=0.01, t_max=10, t=0 ! time step, maximum time, current time
+    integer :: k = 100000 ! number of iterations
+    real, parameter :: G = 1.0  ! gravitational constant
     real, allocatable :: x(:, :, :), v(:, :, :), a(:, :, :)  ! positions, velocities and accelerations
     real, allocatable :: m(:) ! masses
     real, allocatable :: xinits(:, :), vinits(:, :), inits(:, :, :) ! initial conditions
-    real, allocatable :: x1(:), x2(:), x3(:) ! positions of bodies
-    integer :: i, j, l
+    real, allocatable :: x1(:,:), x2(:,:), x3(:,:) ! positions of bodies
+    real :: xinits11=-1.0, xinits12=0.0, xinits21=1.0, xinits22=0.0, xinits31=0.0, xinits32=0.0
+    real :: vinits11=0.347111, vinits12=0.532728, vinits21=0.347111, vinits22=0.532728, vinits31=-0.694222, vinits32=-1.065456
 
+    call read_namelist("namelist_nbody1.nml", d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
+    vinits11, vinits12, vinits21, vinits22, vinits31, vinits32)
+
+    k = t_max / dt
+    t = 0.0
+    
     allocate(x(k, n, d), v(k, n, d), a(k, n, d), m(n), xinits(n, d), vinits(n, d), inits(n, d, 2))
 
     ! Set up initial conditions
-    xinits(1, 1) = -0.602885898116520
-    xinits(1, 2) = 1.059162128863347 - 1
-    xinits(2, 1) = 0.252709795391000
-    xinits(2, 2) = 1.058254872224370 - 1
-    xinits(3, 1) = -0.355389016941814
-    xinits(3, 2) = 1.038323764315145 - 1
-    vinits(1, 1) = 0.122913546623784
-    vinits(1, 2) = 0.747443868604908
-    vinits(2, 1) = -0.019325586404545
-    vinits(2, 2) = 1.369241993562101
-    vinits(3, 1) = -0.103587960218793
-    vinits(3, 2) = -2.116685862168820
+
+    xinits(1, 1) = xinits11
+    xinits(1, 2) = xinits12
+    xinits(2, 1) = xinits21
+    xinits(2, 2) = xinits22
+    xinits(3, 1) = xinits31
+    xinits(3, 2) = xinits32
+    vinits(1, 1) = vinits11
+    vinits(1, 2) = vinits12
+    vinits(2, 1) = vinits21
+    vinits(2, 2) = vinits22
+    vinits(3, 1) = vinits31
+    vinits(3, 2) = vinits32
+
+    x = 0.0
+    v = 0.0
     x(1, :, :) = xinits
     v(1, :, :) = vinits
+    print *, "Initial positions and velocities"
     call print_matrix(x(1, :, :))
     call print_matrix(v(1, :, :))
 
     m = 1.0
-    dt = 0.01
-    t_max = dt*k
-    t = 0.0
-    l = 0
+    
+    print *, "Number of iterations: ", k
 
     call forward_euler(x, v, a, m, G, dt)
+
+    x1 = x(:, 1, :)
+    x2 = x(:, 2, :)
+    x3 = x(:, 3, :)
+    call write_to_csv("fe_body1.csv", x1)
+    call write_to_csv("fe_body2.csv", x2)
+    call write_to_csv("fe_body3.csv", x3)
 
     
     contains
@@ -47,16 +64,16 @@ program nbody
         real, intent(in) :: x(:, :), G
         real, intent(in) :: m(:) ! masses
         real, intent(out) :: a(:, :) ! accelerations
-        integer :: n, d, i, j, k
+        integer :: n, d, b1, b2, dim
 
         n = size(x, 1)
         d = size(x, 2)
         a = 0.0
-        do i = 1, n
-            do j = 1, n
-                if (i /= j) then
-                    do k = 1, d
-                        a(i, k) = a(i, k) - G * m(j) * (x(i, k) - x(j, k)) / (norm2(x(i,:) - x(j,:)))**(3)
+        do b1 = 1, n
+            do b2 = 1, n
+                if (b1 /= b2) then
+                    do dim = 1, d
+                        a(b1, dim) = a(b1, dim) - G * m(b2) * (x(b1, dim) - x(b2, dim)) / (norm2(x(b1,:) - x(b2,:)))**(3)
                     end do
                 end if
             end do
@@ -69,31 +86,18 @@ program nbody
         integer :: k ! number of iterations
         integer :: n ! number of bodies
         integer :: d ! dimensions
+        integer :: i, j
         
         k = size(x, 1)
         n = size(x, 2)
         d = size(x, 3)
 
-        !call write_vector_to_csv("fe_body1.csv", x(1, 1, :))
-        !call write_vector_to_csv("fe_body2.csv", x(1, 2, :))
-        !call write_vector_to_csv("fe_body3.csv", x(1, 3, :))
-
         do i=1, k ! iterations
+            call calculate_acceleration(x(i, :, :), m, G, a(i, :, :))
             do j=1, n ! bodies
-                call calculate_acceleration(x(i, :, :), m, G, a(i, :, :))
-                !print *, "Body ", j, " at iteration ", i, " with position, velocity and acceleration:"
-                !print *, "a ", a(i, j, :), "\n"
-                !print *, "v ", v(i, j, :), "\n"
-                !print *, "x ", x(i, j, :), "\n"
                 x(i+1, j, :) = x(i, j, :) + v(i, j, :) * dt + 0.5 * a(i, j, :) * dt**2
                 v(i+1, j, :) = v(i, j, :) + a(i, j, :) * dt
             end do
-            x1 = x(i+1, 1, :)
-            x2 = x(i+1, 2, :)
-            x3 = x(i+1, 3, :)
-            call write_vector_to_csv("fe_body1.csv", x1)
-            call write_vector_to_csv("fe_body2.csv", x2)
-            call write_vector_to_csv("fe_body3.csv", x3)
         end do
         
     end subroutine forward_euler

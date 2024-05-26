@@ -26,7 +26,7 @@ contains
         integer :: io, i, j
 
         ! Open the file for appending; create a new one if it doesn't exist
-        open(unit=20, file=trim(outfile), status='unknown', action='write', iostat=io, position='append')
+        open(unit=20, file=trim(outfile), status='replace', action='write', iostat=io, position='append')
         if (io /= 0) then
             print *, "Failed to open file:", trim(outfile)
             return
@@ -56,7 +56,7 @@ contains
         integer :: io, i, j
 
         ! Open the file for appending; create a new one if it doesn't exist
-        open(unit=20, file=trim(outfile), status='unknown', action='write', iostat=io, position='append')
+        open(unit=20, file=trim(outfile), status='replace', action='write', iostat=io, position='append')
         if (io /= 0) then
             print *, "Failed to open file:", trim(outfile)
             return
@@ -76,17 +76,23 @@ contains
     end subroutine write_vector_to_csv
 
 
-    subroutine read_namelist(file_path, nx, ny, kappa, a, outfile)
+    subroutine read_namelist(file_path, d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
+        vinits11, vinits12, vinits21, vinits22, vinits31, vinits32)
         use, intrinsic :: iso_fortran_env, only: stderr => error_unit
         !! Reads Namelist from given file.
         character(len=*),  intent(in)    :: file_path
-        integer,           intent(inout) :: nx, ny
-        real,              intent(inout) :: kappa, a
-        integer                          :: fu, rc
-        character(len=*), intent(inout)  :: outfile
+        real,           intent(inout) :: dt, t_max
+        real,              intent(inout) :: xinits11, xinits12, xinits21, xinits22, xinits31, xinits32
+        real,              intent(inout) :: vinits11, vinits12, vinits21, vinits22, vinits31, vinits32
+        integer, intent(inout)           :: d, n
+        integer :: rc, fu
+        !character(len=*), intent(inout)  :: outfile
 
         ! Namelist definition.
-        namelist /INPUTS/ nx, ny, kappa, a, outfile
+        namelist /INPUTS/ d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
+        vinits11, vinits12, vinits21, vinits22, vinits31, vinits32
+
+        print *, 'Read Namelist'
 
         ! Check whether file exists.
         inquire (file=file_path, iostat=rc)
@@ -102,6 +108,8 @@ contains
         if (rc /= 0) write (stderr, '("Error: invalid Namelist format")')
 
         close (fu)
+
+        print *, 'Fu closed'
     end subroutine read_namelist
 
 end module nbody_utilities
