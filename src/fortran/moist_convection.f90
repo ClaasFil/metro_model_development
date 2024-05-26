@@ -74,6 +74,10 @@ program dry_convection
     print *, 'Ra = ', Ra
     print *, 'T_ini_type = ', T_ini_type
     print *, 'Pr = ', Pr
+    print *, 'alpha = ', alpha
+    print *, 'gamma = ', gamma
+    print *, 'lambda = ', lambda
+    print *, 'tau = ', tau
 
     !nx = 10
     !ny = 10
@@ -133,6 +137,28 @@ program dry_convection
     endif
     close(10)
 
+    open(unit=10, file=trim(outputfilename_q), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
+    open(unit=10, file=trim(outputfilename_C), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
+    open(unit=10, file=trim(outputfilename_psi), status='replace', action='write', iostat=io_error)
+    if (io_error /= 0) then
+        print *, 'Error opening file:', io_error
+        stop
+    endif
+    close(10)
+
+
     call write_to_csv_real8(outputfilename_T, T)
     call write_to_csv_real8(outputfilename_q, q)
     call write_to_csv_real8(outputfilename_C, C)
@@ -183,7 +209,7 @@ program dry_convection
         T = T_new
 
         ! Calc next q
-        q_new = q + dt * (Sm*d2q - vdq)
+        q_new = q + dt * (Sm*d2q - vdq) 
         q = q_new
 
         ! calc next 𝜔
@@ -197,14 +223,21 @@ program dry_convection
 
         !Diagnose condensation
         q_qs = q - qs
-        C = (q - qs) / tau * heaviside(q_qs)
+        !call print_matrix(q_qs)
+        C = (q_qs) / tau * heaviside(q_qs)
+        !print *, 'Maximu of C = ', MAXVAL(C)
+        print * , "C>0 ", COUNT(C > 0.0)
+        !print *, 'Minimu of C = ', MINVAL(C)
+
+        ! Update T and q
         T_new = T + lambda * C
         T = T_new
         q_new = q - C
         q = q_new
+
         
         ! Maxiter to protect from to long runtimes and make numerically instable behavior debugging easier
-        if (k >= 3000) then
+        if (k >= 2500) then
             exit
         end if
 
@@ -232,6 +265,7 @@ program dry_convection
             do CONCURRENT(i = 1:nx, j = 1:ny)
                 if (x(i, j) > 0.0) then
                     y(i, j) = 1.0
+                    !print *, 'x(i, j) = ', x(i, j)
                 else
                     y(i, j) = 0.0
                 end if
@@ -249,6 +283,8 @@ program dry_convection
 
             q = EXP(alpha * T)
         END FUNCTION qsat
+
+        
 
 
 end program dry_convection

@@ -72,9 +72,9 @@ contains
         do i = 1, size(T, 1)
             do j = 1, size(T, 2)
                 if (j == size(T, 2)) then
-                    write(20, '(F12.2)') T(i, j)  ! Last element in the row
+                    write(20, '(F12.5)') T(i, j)  ! Last element in the row
                 else
-                    write(20, '(F12.2, A)', advance='no') T(i, j), ','  ! Elements with comma
+                    write(20, '(F12.5, A)', advance='no') T(i, j), ','  ! Elements with comma
                 end if
             end do
             write(20, *)  ! Newline for the next row
