@@ -24,6 +24,12 @@ EXEC = dry_convection
 # Default target
 all: $(EXEC)
 
+# Dependencies for modules
+$(HELPER_DIR)/utilities.o: $(HELPER_DIR)/utilities.f90
+$(HELPER_DIR)/finitdifferences.o: $(HELPER_DIR)/finitdifferences.f90 $(HELPER_DIR)/utilities.o
+$(HELPER_DIR)/poisson_solver_utilities.o: $(HELPER_DIR)/poisson_solver_utilities.f90 $(HELPER_DIR)/utilities.o
+$(SRC_DIR)/dry_convection.o: $(SRC_DIR)/dry_convection.f90 $(HELPER_DIR)/utilities.o $(HELPER_DIR)/finitdifferences.o $(HELPER_DIR)/poisson_solver_utilities.o
+
 # Rule to create the executable
 $(EXEC): $(OBJECTS)
 	$(FC) $(FFLAGS) -I$(MOD_DIR) -o $@ $(OBJECTS)

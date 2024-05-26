@@ -11,16 +11,17 @@ program dry_convection
     use poisson_solver_utilities
     use, intrinsic :: iso_fortran_env, only: stderr => error_unit
     implicit none
-    integer :: nx=4, ny=4                    ! number of grid points in x and y
+    integer :: nx=257, ny=65                    ! number of grid points in x and y
     integer :: io_error                      ! error code for file IO
     integer :: k                            ! iteration counter
     integer :: nsteps                        ! number of time steps
-    integer :: i, j                          ! loop indices
-    real :: a_adv, a_diff                    ! advection and diffusion coefficients
-    real :: total_time                       ! total simulation time
-    real :: max_err                          ! maximum error
-    real :: Ra                               ! Rayleigh number
-    real :: Pr                              ! Prandtl number
+    integer :: i, j                          ! loop variables
+    real :: a_adv = 0.4                 ! advection coefficients 
+    real :: a_diff = 0.23                   ! diffusion coefficients
+    real :: total_time = 0.1                      ! total simulation time
+    real :: max_err = 1.E-3                          ! maximum error
+    real :: Ra = 1.E5                               ! Rayleigh number
+    real :: Pr = 1                             ! Prandtl number
     real(8) :: h                             ! grid spacing
     real(8) :: dt                            ! time step
     real(8) :: alpha = 1.                         ! relaxation parameter
@@ -102,7 +103,7 @@ program dry_convection
         stop
     end if
 
-    outputfilename = 'data/ex_8/T_cos_Pr001.csv'
+    outputfilename = 'data/ex_8/T_cos_Pr0001.csv'
     open(unit=10, file=trim(outputfilename), status='replace', action='write', iostat=io_error)
     if (io_error /= 0) then
         print *, 'Error opening file:', io_error

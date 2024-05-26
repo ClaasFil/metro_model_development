@@ -72,9 +72,9 @@ contains
         do i = 1, size(T, 1)
             do j = 1, size(T, 2)
                 if (j == size(T, 2)) then
-                    write(20, '(F12.2)') T(i, j)  ! Last element in the row
+                    write(20, '(F12.5)') T(i, j)  ! Last element in the row
                 else
-                    write(20, '(F12.2, A)', advance='no') T(i, j), ','  ! Elements with comma
+                    write(20, '(F12.5, A)', advance='no') T(i, j), ','  ! Elements with comma
                 end if
             end do
             write(20, *)  ! Newline for the next row
@@ -237,6 +237,31 @@ module namelist_utilities
     
         close(unit=10)
     end subroutine read_namelist_ex8
+
+    subroutine read_namelist_ex9(filename, nx, ny, a_adv, a_diff, total_time, max_err, &
+        Ra, T_ini_type, Pr, gamma, lambda, tau, alpha)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: nx, ny
+        real, intent(out) :: a_adv, a_diff, total_time, max_err, Ra, Pr, gamma, lambda, tau, alpha
+        character(len=*), intent(out) ::T_ini_type
+    
+        namelist /INPUTS/ nx, ny, a_adv, a_diff, total_time, max_err, Ra, T_ini_type, Pr, gamma, lambda, tau, alpha
+    
+        integer :: io
+        open(unit=10, file=filename, status='old', iostat=io)
+        if (io /= 0) then
+            print *, "Failed to open namelist file:", filename
+            return
+        end if
+    
+        read(unit=10, nml=INPUTS, iostat=io)
+        if (io /= 0) then
+            print *, "Error reading namelist"
+        end if
+    
+        close(unit=10)
+    end subroutine read_namelist_ex9
+
 
 end module namelist_utilities
 
