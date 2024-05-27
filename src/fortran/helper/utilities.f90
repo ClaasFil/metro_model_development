@@ -85,6 +85,53 @@ contains
     end subroutine write_to_csv_real8
 end module csv_writer
 
+module netcdf_writer
+    use netcdf
+    implicit none
+contains
+    subroutine write_to_netcdf(outfile, T)
+        implicit none
+        real(8), dimension(:,:), intent(in) :: T
+        character(len=*), intent(in) :: outfile
+        integer :: ncid, varid, dimids(2)
+        integer :: nx, ny
+        integer :: status
+
+        ! Define the size of each dimension
+        nx = size(T, 1)
+        ny = size(T, 2)
+
+        ! Create a new NetCDF file. NC_CLOBBER overwrites any existing file.
+        status = nf90_create(path=trim(outfile), cmode=NF90_CLOBBER, ncid=ncid)
+        if (status /= NF90_NOERR) then
+            print *, 'Error creating NetCDF file:', trim(outfile)
+            return
+        end if
+
+        ! Define the dimensions.
+        status = nf90_def_dim(ncid, "x", nx, dimids(1))
+        status = nf90_def_dim(ncid, "y", ny, dimids(2))
+
+        ! Define a new variable in the root group. The type of the variable is real.
+        status = nf90_def_var(ncid, "temperature", NF90_DOUBLE, dimids, varid)
+
+        ! End define mode.
+        status = nf90_enddef(ncid)
+
+        ! Write the data to the NetCDF file.
+        status = nf90_put_var(ncid, varid, T)
+
+        ! Close the NetCDF file.
+        status = nf90_close(ncid)
+
+        if (status /= NF90_NOERR) then
+            print *, 'Error writing to NetCDF file:', trim(outfile)
+        else
+            print *, 'Data successfully written to:', trim(outfile)
+        end if
+    end subroutine write_to_netcdf
+end module netcdf_writer
+
 module binary_writer
     implicit none
 contains
