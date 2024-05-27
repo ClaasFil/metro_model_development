@@ -4,6 +4,7 @@ program dry_convection
     use finitedifference
     use namelist_utilities
     use csv_writer
+    use netcdf_writer
     use matrix_utilities
     use boundaries_ex7
     use T_inits
