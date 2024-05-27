@@ -127,44 +127,6 @@ program dry_convection
     qs = exp(alpha * T)
     q = 0.8 * qs
 
-    outputfilename_T = 'data/ex_9/T_cos.csv'
-    outputfilename_q = 'data/ex_9/q_cos.csv'
-    outputfilename_C = 'data/ex_9/C_cos.csv'
-    outputfilename_psi = 'data/ex_9/psi_cos.csv'
-    open(unit=10, file=trim(outputfilename_T), status='replace', action='write', iostat=io_error)
-    if (io_error /= 0) then
-        print *, 'Error opening file:', io_error
-        stop
-    endif
-    close(10)
-
-    open(unit=10, file=trim(outputfilename_q), status='replace', action='write', iostat=io_error)
-    if (io_error /= 0) then
-        print *, 'Error opening file:', io_error
-        stop
-    endif
-    close(10)
-
-    open(unit=10, file=trim(outputfilename_C), status='replace', action='write', iostat=io_error)
-    if (io_error /= 0) then
-        print *, 'Error opening file:', io_error
-        stop
-    endif
-    close(10)
-
-    open(unit=10, file=trim(outputfilename_psi), status='replace', action='write', iostat=io_error)
-    if (io_error /= 0) then
-        print *, 'Error opening file:', io_error
-        stop
-    endif
-    close(10)
-
-
-    call write_to_csv_real8(outputfilename_T, T)
-    call write_to_csv_real8(outputfilename_q, q)
-    call write_to_csv_real8(outputfilename_C, C)
-    call write_to_csv_real8(outputfilename_psi, psi)
-
 
     k = 0
     do while (time < total_time)
@@ -247,10 +209,11 @@ program dry_convection
             !call write_to_csv_real8(outputfilename, T)
         !end if
     end do
-    call write_to_csv_real8(outputfilename_T, T)
-    call write_to_csv_real8(outputfilename_q, q)
-    call write_to_csv_real8(outputfilename_C, C)
-    call write_to_csv_real8(outputfilename_psi, psi)
+
+    call write_to_netcdf('data/ex_9/T_cos.nc', T)
+    call write_to_netcdf('data/ex_9/q_cos.nc', q)
+    call write_to_netcdf('data/ex_9/C_cos.nc', C)
+    call write_to_netcdf('data/ex_9/psi_cos.nc', psi)
 
     contains
 
