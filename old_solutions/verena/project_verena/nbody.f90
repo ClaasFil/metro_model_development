@@ -102,4 +102,45 @@ program nbody
         
     end subroutine forward_euler
 
+    subroutine runge_kutta(x, v, a, m, G, dt)
+        real, intent(inout) :: x(:, :, :), v(:, :, :), a(:, :, :) ! positions, velocities, accelerations and masses
+        real, allocatable :: v1(:, :), v2(:, :) ! intermediate velocities
+        real, allocatable :: k1(:, :), k2(:, :) ! intermediate positions
+        real, allocatable :: a1(:, :), a2(:, :), a3(:, :) ! intermediate accelerations
+        real, intent(in) :: G, dt, m(:) ! gravitational constant, time step and masses
+        integer :: k ! number of iterations
+        integer :: n ! number of bodies
+        integer :: d ! dimensions
+        integer :: i, j
+        
+        k = size(x, 1)
+        n = size(x, 2)
+        d = size(x, 3)
+
+        allocate(v1(n, d), v2(n, d))
+        allocate(k1(n, d), k2(n, d))
+        allocate(a1(n, d), a2(n, d), a3(n, d))
+
+        x1 = 0.0
+        x2 = 0.0
+        a1 = 0.0
+        a2 = 0.0
+        a3 = 0.0
+
+        do i=1, k ! iterations
+            call calculate_acceleration(x(i, :, :), m, G, a1(:, :))
+            x1 = x(i, :, :) + dt/2 * a1(:, :)
+            call calculate_acceleration(x1(:, :), m, G, a2(:, :))
+            x2 = x(i, :, :) + dt * (-a1(:, :) + 2*a2(:, :))
+            call calculate_acceleration(x2(:, :), m, G, a3(:, :))
+            v1 = v(i, :, :) + dt/2 * a1(:, :)
+            v2 = v(i, :, :) + dt * (-a1(:, :) + 2*a2(:, :))
+            do j=1, n ! bodies
+                v(i+1, j, :) = v(i, j, :) + dt/6 * (a1(j, :) + 4*a2(j, :) + a3(j, :))
+                x(i+1, j, :) = x(i, j, :) + dt/6 * (v(i, j, :) + 4*v1(j, :) + 2*v2(j, :))
+            end do
+        end do
+        
+    end subroutine runge_kutta
+
 end program nbody
