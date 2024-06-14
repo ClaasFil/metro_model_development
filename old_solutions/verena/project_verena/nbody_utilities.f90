@@ -19,6 +19,37 @@ contains
     end subroutine print_matrix
 
 
+    subroutine read_initial_conditions(filename, n_dimensions, n_bodies, m, x, v)
+        character(len=*), intent(in) :: filename
+        integer, intent(out) :: n_dimensions, n_bodies
+        real, allocatable, intent(out) :: m(:)
+        real, allocatable, intent(out) :: x(:, :), v(:, :)
+        integer :: i, j
+        character(len=100) :: line
+        integer :: ios
+        open(unit=10, file=filename, status='old', action='read', iostat=ios)
+        if (ios /= 0) then
+            print *, 'Error opening file: ', filename
+            stop
+        end if
+    
+        ! Read number of dimensions and bodies
+        read(10, *) n_dimensions, n_bodies
+    
+        ! Allocate arrays
+        allocate(m(n_bodies))
+        allocate(x(n_bodies, n_dimensions))
+        allocate(v(n_bodies, n_dimensions))
+    
+        ! Read masses, positions, and velocities
+        do i = 1, n_bodies
+            read(10, *) m(i), (x(i, j), j=1, n_dimensions), (v(i, j), j=1, n_dimensions)
+        end do
+    
+        close(10)
+    end subroutine read_initial_conditions
+
+
     subroutine write_to_csv(outfile, T)
         implicit none
         real, dimension(:,:), intent(in) :: T
@@ -76,23 +107,18 @@ contains
     end subroutine write_vector_to_csv
 
 
-    subroutine read_namelist(file_path, d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
-        vinits11, vinits12, vinits21, vinits22, vinits31, vinits32)
+    subroutine read_namelist(file_path, dt, t_max, method, inits)
         use, intrinsic :: iso_fortran_env, only: stderr => error_unit
         !! Reads Namelist from given file.
         character(len=*),  intent(in)    :: file_path
         real,           intent(inout) :: dt, t_max
-        real,              intent(inout) :: xinits11, xinits12, xinits21, xinits22, xinits31, xinits32
-        real,              intent(inout) :: vinits11, vinits12, vinits21, vinits22, vinits31, vinits32
-        integer, intent(inout)           :: d, n
+        character(len=20), intent(inout) :: method
+        character(len=6), intent(inout) :: inits
         integer :: rc, fu
         !character(len=*), intent(inout)  :: outfile
 
         ! Namelist definition.
-        namelist /INPUTS/ d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
-        vinits11, vinits12, vinits21, vinits22, vinits31, vinits32
-
-        print *, 'Read Namelist'
+        namelist /INPUTS/ dt, t_max, method, inits
 
         ! Check whether file exists.
         inquire (file=file_path, iostat=rc)
@@ -109,7 +135,13 @@ contains
 
         close (fu)
 
-        print *, 'Fu closed'
     end subroutine read_namelist
+
+    character(len=20) function str(k)
+    !   "Convert an integer to string."
+        integer, intent(in) :: k
+        write (str, *) k
+        str = adjustl(str)
+    end function str
 
 end module nbody_utilities

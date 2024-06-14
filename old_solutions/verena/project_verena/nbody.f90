@@ -8,33 +8,21 @@ program nbody
     real, parameter :: G = 1.0  ! gravitational constant
     real, allocatable :: x(:, :, :), v(:, :, :), a(:, :, :)  ! positions, velocities and accelerations
     real, allocatable :: m(:) ! masses
-    real, allocatable :: xinits(:, :), vinits(:, :), inits(:, :, :) ! initial conditions
+    real, allocatable :: xinits(:, :), vinits(:, :) ! initial conditions
     real, allocatable :: x1(:,:), x2(:,:), x3(:,:) ! positions of bodies
-    real :: xinits11=-1.0, xinits12=0.0, xinits21=1.0, xinits22=0.0, xinits31=0.0, xinits32=0.0
-    real :: vinits11=0.347111, vinits12=0.532728, vinits21=0.347111, vinits22=0.532728, vinits31=-0.694222, vinits32=-1.065456
+    character(len=6) :: inits = "inits1"
+    character(len=20) :: method
+    integer :: l
 
-    call read_namelist("namelist_nbody1.nml", d, n, dt, t_max, xinits11, xinits12, xinits21, xinits22, xinits31, xinits32, &
-    vinits11, vinits12, vinits21, vinits22, vinits31, vinits32)
+    call read_namelist("namelist_nbody.nml", dt, t_max, method, inits)
 
-    k = t_max / dt
+    ! Read initial conditions from file
+    call read_initial_conditions(inits // ".txt", d, n, m, xinits, vinits)
+
+    k = INT(FLOOR(t_max / dt))
     t = 0.0
     
-    allocate(x(k, n, d), v(k, n, d), a(k, n, d), m(n), xinits(n, d), vinits(n, d), inits(n, d, 2))
-
-    ! Set up initial conditions
-
-    xinits(1, 1) = xinits11
-    xinits(1, 2) = xinits12
-    xinits(2, 1) = xinits21
-    xinits(2, 2) = xinits22
-    xinits(3, 1) = xinits31
-    xinits(3, 2) = xinits32
-    vinits(1, 1) = vinits11
-    vinits(1, 2) = vinits12
-    vinits(2, 1) = vinits21
-    vinits(2, 2) = vinits22
-    vinits(3, 1) = vinits31
-    vinits(3, 2) = vinits32
+    allocate(x(k, n, d), v(k, n, d), a(k, n, d)) 
 
     x = 0.0
     v = 0.0
@@ -43,12 +31,14 @@ program nbody
     print *, "Initial positions and velocities"
     call print_matrix(x(1, :, :))
     call print_matrix(v(1, :, :))
-
-    m = 1.0
     
     print *, "Number of iterations: ", k
 
-    call forward_euler(x, v, a, m, G, dt)
+    call runge_kutta4(x, v, m, G, dt)
+
+    do l = 1, n
+        call write_to_csv("output/" // trim(adjustl(method)) // inits // "_body" // trim(adjustl(str(l))) // ".csv", x(:, l, :))
+    end do
 
     x1 = x(:, 1, :)
     x2 = x(:, 2, :)
@@ -80,9 +70,10 @@ program nbody
         end do
     end subroutine calculate_acceleration
 
-    subroutine forward_euler(x, v, a, m, G, dt)
-        real, intent(inout) :: x(:, :, :), v(:, :, :), a(:, :, :) ! positions, velocities, accelerations and masses
+    subroutine forward_euler(x, v, m, G, dt)
+        real, intent(inout) :: x(:, :, :), v(:, :, :) ! positions, velocities, accelerations and masses
         real, intent(in) :: G, dt, m(:) ! gravitational constant, time step and masses
+        real, allocatable :: a(:, :, :) ! accelerations
         integer :: k ! number of iterations
         integer :: n ! number of bodies
         integer :: d ! dimensions
@@ -91,6 +82,8 @@ program nbody
         k = size(x, 1)
         n = size(x, 2)
         d = size(x, 3)
+
+        allocate(a(k, n, d))
 
         do i=1, k ! iterations
             call calculate_acceleration(x(i, :, :), m, G, a(i, :, :))
@@ -102,45 +95,93 @@ program nbody
         
     end subroutine forward_euler
 
-    subroutine runge_kutta(x, v, a, m, G, dt)
-        real, intent(inout) :: x(:, :, :), v(:, :, :), a(:, :, :) ! positions, velocities, accelerations and masses
-        real, allocatable :: v1(:, :), v2(:, :) ! intermediate velocities
-        real, allocatable :: k1(:, :), k2(:, :) ! intermediate positions
-        real, allocatable :: a1(:, :), a2(:, :), a3(:, :) ! intermediate accelerations
-        real, intent(in) :: G, dt, m(:) ! gravitational constant, time step and masses
-        integer :: k ! number of iterations
-        integer :: n ! number of bodies
-        integer :: d ! dimensions
+    subroutine runge_kutta2(x, v, m, G, dt)
+        real, intent(inout) :: x(:, :, :), v(:, :, :)
+        real, allocatable :: x1(:, :), x2(:, :), x3(:, :), x4(:, :)
+        real, allocatable :: v1(:, :), v2(:, :), v3(:, :), v4(:, :)
+        real, allocatable :: a1(:, :), a2(:, :), a3(:, :), a4(:, :)
+        real, intent(in) :: G, dt, m(:)
+        integer :: k, n, d
         integer :: i, j
+    
+        k = size(x, 1)
+        n = size(x, 2)
+        d = size(x, 3)
+    
+        allocate(x1(n, d), x2(n, d), x3(n, d), x4(n, d))
+        allocate(v1(n, d), v2(n, d), v3(n, d), v4(n, d))
+        allocate(a1(n, d), a2(n, d), a3(n, d), a4(n, d))
+    
+        do i=1, k-1 ! iterations
+            call calculate_acceleration(x(i, :, :), m, G, a1)
+    
+            v1 = v(i, :, :)
+            x1 = x(i, :, :) + dt/2 * v1
+    
+            call calculate_acceleration(x1, m, G, a2)
+            v2 = v(i, :, :) + dt/2 * a1
+            x2 = x(i, :, :) + dt/2 * v2
+    
+            call calculate_acceleration(x2, m, G, a3)
+            v3 = v(i, :, :) + dt/2 * a2
+            x3 = x(i, :, :) + dt/2 * v3
+    
+            call calculate_acceleration(x3, m, G, a4)
+            v4 = v(i, :, :) + dt * a3
+            x4 = x(i, :, :) + dt * v3
+    
+            do j=1, n
+                v(i+1, j, :) = v(i, j, :) + dt/6 * (a1(j, :) + 2*a2(j, :) + 2*a3(j, :) + a4(j, :))
+                x(i+1, j, :) = x(i, j, :) + dt/6 * (v1(j, :) + 2*v2(j, :) + 2*v3(j, :) + v4(j, :))
+            end do
+        end do
+    end subroutine runge_kutta2
+    
+    subroutine runge_kutta4(x, v, m, G, dt)
+        implicit none
+        real, intent(inout) :: x(:, :, :), v(:, :, :) ! positions, velocities
+        real, intent(in) :: m(:), G, dt ! masses, gravitational constant, time step
+        integer :: k, n, d ! number of iterations, number of bodies, dimensions
+        integer :: i, j ! iteration indices
+        real, allocatable :: kx1(:,:), kx2(:,:), kx3(:,:), kx4(:,:)
+        real, allocatable :: kv1(:,:), kv2(:,:), kv3(:,:), kv4(:,:)
+        real, allocatable :: a1(:,:), a2(:,:), a3(:,:), a4(:,:)
         
         k = size(x, 1)
         n = size(x, 2)
         d = size(x, 3)
-
-        allocate(v1(n, d), v2(n, d))
-        allocate(k1(n, d), k2(n, d))
-        allocate(a1(n, d), a2(n, d), a3(n, d))
-
-        x1 = 0.0
-        x2 = 0.0
-        a1 = 0.0
-        a2 = 0.0
-        a3 = 0.0
-
-        do i=1, k ! iterations
-            call calculate_acceleration(x(i, :, :), m, G, a1(:, :))
-            x1 = x(i, :, :) + dt/2 * a1(:, :)
-            call calculate_acceleration(x1(:, :), m, G, a2(:, :))
-            x2 = x(i, :, :) + dt * (-a1(:, :) + 2*a2(:, :))
-            call calculate_acceleration(x2(:, :), m, G, a3(:, :))
-            v1 = v(i, :, :) + dt/2 * a1(:, :)
-            v2 = v(i, :, :) + dt * (-a1(:, :) + 2*a2(:, :))
-            do j=1, n ! bodies
-                v(i+1, j, :) = v(i, j, :) + dt/6 * (a1(j, :) + 4*a2(j, :) + a3(j, :))
-                x(i+1, j, :) = x(i, j, :) + dt/6 * (v(i, j, :) + 4*v1(j, :) + 2*v2(j, :))
+    
+        allocate(kx1(n,d), kx2(n,d), kx3(n,d), kx4(n,d))
+        allocate(kv1(n,d), kv2(n,d), kv3(n,d), kv4(n,d))
+        allocate(a1(n,d), a2(n,d), a3(n,d), a4(n,d))
+    
+        do i=1, k-1 ! iterations
+            ! Step 1
+            call calculate_acceleration(x(i,:,:), m, G, a1)
+            kx1 = v(i,:,:)
+            kv1 = a1
+            
+            ! Step 2
+            call calculate_acceleration(x(i,:,:) + 0.5*dt*kx1, m, G, a2)
+            kx2 = v(i,:,:) + 0.5*dt*kv1
+            kv2 = a2
+            
+            ! Step 3
+            call calculate_acceleration(x(i,:,:) + 0.5*dt*kx2, m, G, a3)
+            kx3 = v(i,:,:) + 0.5*dt*kv2
+            kv3 = a3
+            
+            ! Step 4
+            call calculate_acceleration(x(i,:,:) + dt*kx3, m, G, a4)
+            kx4 = v(i,:,:) + dt*kv3
+            kv4 = a4
+            
+            do j=1, n ! update positions and velocities for each body
+                x(i+1,j,:) = x(i,j,:) + dt/6.0 * (kx1(j,:) + 2.0*kx2(j,:) + 2.0*kx3(j,:) + kx4(j,:))
+                v(i+1,j,:) = v(i,j,:) + dt/6.0 * (kv1(j,:) + 2.0*kv2(j,:) + 2.0*kv3(j,:) + kv4(j,:))
             end do
         end do
-        
-    end subroutine runge_kutta
+
+        end subroutine runge_kutta4    
 
 end program nbody
