@@ -28,13 +28,21 @@ program nbody
     v = 0.0
     x(1, :, :) = xinits
     v(1, :, :) = vinits
+    
     print *, "Initial positions and velocities"
     call print_matrix(x(1, :, :))
     call print_matrix(v(1, :, :))
     
     print *, "Number of iterations: ", k
+    print *, "Method: ", method
 
-    call runge_kutta4(x, v, m, G, dt)
+    if (method == "FE") then
+        call forward_euler(x, v, m, G, dt)
+    else if (method == "RK2") then
+        call runge_kutta2(x, v, m, G, dt)
+    else if (method == "RK4") then
+        call runge_kutta4(x, v, m, G, dt)
+    end if
 
     do l = 1, n
         call write_to_csv("output/" // trim(adjustl(method)) // inits // "_body" // trim(adjustl(str(l))) // ".csv", x(:, l, :))
