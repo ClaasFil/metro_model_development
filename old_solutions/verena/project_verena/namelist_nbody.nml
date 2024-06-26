@@ -1,6 +1,6 @@
 &INPUTS
 dt = 0.001
 t_max = 10.0
-inits = "inits2"
+inits = "inits5"
 method = "BE"
 /
