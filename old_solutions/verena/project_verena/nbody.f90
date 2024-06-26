@@ -38,8 +38,8 @@ program nbody
 
     if (method == "FE") then
         call forward_euler(x, v, m, G, dt)
-    else if (method == "RK2") then
-        call runge_kutta2(x, v, m, G, dt)
+    else if (method == "BE") then
+        call backward_euler(x, v, m, G, dt)
     else if (method == "RK4") then
         call runge_kutta4(x, v, m, G, dt)
     end if
@@ -103,47 +103,55 @@ program nbody
         
     end subroutine forward_euler
 
-    subroutine runge_kutta2(x, v, m, G, dt)
-        real, intent(inout) :: x(:, :, :), v(:, :, :)
-        real, allocatable :: x1(:, :), x2(:, :), x3(:, :), x4(:, :)
-        real, allocatable :: v1(:, :), v2(:, :), v3(:, :), v4(:, :)
-        real, allocatable :: a1(:, :), a2(:, :), a3(:, :), a4(:, :)
-        real, intent(in) :: G, dt, m(:)
-        integer :: k, n, d
-        integer :: i, j
+    subroutine backward_euler(x, v, m, G, dt)
+        real, intent(inout) :: x(:, :, :), v(:, :, :) ! positions, velocities
+        real, intent(in) :: G, dt, m(:) ! gravitational constant, time step, and masses
+        real, allocatable :: a(:, :, :), a_next(:, :) ! accelerations
+        real, allocatable :: x_next(:, :), v_next(:, :) ! next positions and velocities
+        integer :: k ! number of iterations
+        integer :: n ! number of bodies
+        integer :: d ! dimensions
+        integer :: i, j, iter
+        real :: norm_diff
+        real, parameter :: tol = 1e-6 ! tolerance for fixed-point iteration
+        integer, parameter :: max_iter = 100 ! maximum iterations for fixed-point iteration
     
         k = size(x, 1)
         n = size(x, 2)
         d = size(x, 3)
     
-        allocate(x1(n, d), x2(n, d), x3(n, d), x4(n, d))
-        allocate(v1(n, d), v2(n, d), v3(n, d), v4(n, d))
-        allocate(a1(n, d), a2(n, d), a3(n, d), a4(n, d))
+        allocate(a(k, n, d), a_next(n, d), x_next(n, d), v_next(n, d))
     
         do i=1, k-1 ! iterations
-            call calculate_acceleration(x(i, :, :), m, G, a1)
+            ! Initial guess for the next velocities and positions
+            call calculate_acceleration(x(i, :, :), m, G, a(i, :, :))
+            x_next = x(i, :, :)
+            v_next = v(i, :, :)
     
-            v1 = v(i, :, :)
-            x1 = x(i, :, :) + dt/2 * v1
+            ! Fixed-point iteration to solve the implicit equations
+            do iter = 1, max_iter
+                call calculate_acceleration(x_next, m, G, a_next)
+                norm_diff = 0.0
+                do j=1, n ! bodies
+                    ! Update velocities and positions
+                    v_next(j, :) = v(i, j, :) + dt * a_next(j, :)
+                    x_next(j, :) = x(i, j, :) + dt * v_next(j, :)
     
-            call calculate_acceleration(x1, m, G, a2)
-            v2 = v(i, :, :) + dt/2 * a1
-            x2 = x(i, :, :) + dt/2 * v2
+                    ! Calculate the norm difference for convergence check
+                    norm_diff = norm_diff + sum((v_next(j, :) - v(i, j, :))**2) + sum((x_next(j, :) - x(i, j, :))**2)
+                end do
     
-            call calculate_acceleration(x2, m, G, a3)
-            v3 = v(i, :, :) + dt/2 * a2
-            x3 = x(i, :, :) + dt/2 * v3
-    
-            call calculate_acceleration(x3, m, G, a4)
-            v4 = v(i, :, :) + dt * a3
-            x4 = x(i, :, :) + dt * v3
-    
-            do j=1, n
-                v(i+1, j, :) = v(i, j, :) + dt/6 * (a1(j, :) + 2*a2(j, :) + 2*a3(j, :) + a4(j, :))
-                x(i+1, j, :) = x(i, j, :) + dt/6 * (v1(j, :) + 2*v2(j, :) + 2*v3(j, :) + v4(j, :))
+                ! Check for convergence
+                if (sqrt(norm_diff) < tol) exit
             end do
+    
+            ! Assign converged values to the arrays
+            x(i+1, :, :) = x_next
+            v(i+1, :, :) = v_next
+            a(i+1, :, :) = a_next
         end do
-    end subroutine runge_kutta2
+
+    end subroutine backward_euler
     
     subroutine runge_kutta4(x, v, m, G, dt)
         implicit none
@@ -164,22 +172,18 @@ program nbody
         allocate(a1(n,d), a2(n,d), a3(n,d), a4(n,d))
     
         do i=1, k-1 ! iterations
-            ! Step 1
             call calculate_acceleration(x(i,:,:), m, G, a1)
             kx1 = v(i,:,:)
             kv1 = a1
             
-            ! Step 2
             call calculate_acceleration(x(i,:,:) + 0.5*dt*kx1, m, G, a2)
             kx2 = v(i,:,:) + 0.5*dt*kv1
             kv2 = a2
-            
-            ! Step 3
+
             call calculate_acceleration(x(i,:,:) + 0.5*dt*kx2, m, G, a3)
             kx3 = v(i,:,:) + 0.5*dt*kv2
             kv3 = a3
-            
-            ! Step 4
+
             call calculate_acceleration(x(i,:,:) + dt*kx3, m, G, a4)
             kx4 = v(i,:,:) + dt*kv3
             kv4 = a4
